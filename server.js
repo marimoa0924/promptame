@@ -12,7 +12,7 @@ import { networkInterfaces } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { Server } from 'socket.io';
 import { Room } from './game/room.js';
-import { createAIFromEnv } from './game/gemini.js';
+import { createAIFromEnv, listModels } from './game/gemini.js';
 import { checkNickname, nicknameError } from './nickname.js';
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -153,6 +153,12 @@ async function selfTest() {
   const r = await ai.generate('안녕이라고만 답해 줘');
   if (r.status === 'OK') console.log(`  ✅ Gemini 연결 확인 (${r.latencyMs}ms): ${r.text.slice(0, 30)}`);
   else console.log(`  ❌ Gemini 호출 실패: ${r.status} ${r.finishReason ?? ''} ${r.detail ?? ''}\n     → 키(GEMINI_API_KEY)와 모델 이름(GEMINI_MODEL)을 확인하세요`);
+  if (r.finishReason === 'HTTP_404') {
+    const names = (await listModels(process.env.GEMINI_API_KEY)).filter((n) => n.includes('gemini'));
+    console.log(names.length
+      ? `     → 이 키로 쓸 수 있는 모델: ${names.slice(0, 12).join(', ')}\n     → .env 의 GEMINI_MODEL= 뒤에 위 이름 중 하나(예: ${names.find((n) => n.includes('flash')) ?? names[0]})를 적고 서버를 다시 켜세요`
+      : '     → 모델 목록도 가져오지 못했어요. 키가 맞는지 확인하세요');
+  }
 }
 
 httpServer.listen(PORT, '0.0.0.0', () => {

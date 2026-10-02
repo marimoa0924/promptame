@@ -23,6 +23,7 @@ export function createGemini({
   fetchImpl = globalThis.fetch,
 } = {}) {
   if (!apiKey) throw new Error('GEMINI_API_KEY가 없어요');
+  model = String(model).trim().replace(/^models\//, ''); // 'models/gemini-...'로 적어도 된다
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
   return {
@@ -145,4 +146,20 @@ export function createAIFromEnv(env = process.env) {
     model: env.GEMINI_MODEL || undefined,
     thinkingBudget: env.GEMINI_THINKING_BUDGET === undefined ? 0 : env.GEMINI_THINKING_BUDGET === '' ? '' : Number(env.GEMINI_THINKING_BUDGET),
   });
+}
+
+// 이 키로 쓸 수 있는 모델 이름 목록 (모델 이름이 틀렸을 때 안내용)
+export async function listModels(apiKey, fetchImpl = globalThis.fetch) {
+  try {
+    const res = await fetchImpl('https://generativelanguage.googleapis.com/v1beta/models?pageSize=100', {
+      headers: { 'x-goog-api-key': apiKey },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.models ?? [])
+      .filter((m) => (m.supportedGenerationMethods ?? []).includes('generateContent'))
+      .map((m) => m.name.replace(/^models\//, ''));
+  } catch {
+    return [];
+  }
 }

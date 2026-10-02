@@ -1,7 +1,7 @@
 // 실행: node --test
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGemini, createMockAI, generateWithRetry } from './gemini.js';
+import { createGemini, createMockAI, generateWithRetry, listModels } from './gemini.js';
 
 const reply = (body, ok = true, status = 200) => async () => ({ ok, status, json: async () => body });
 
@@ -76,4 +76,13 @@ test('목은 프롬프트가 길수록 필수어를 더 담는다', async () => 
   assert.equal(await count('아이들에게 쉽게 짧게 알려 줘'), 1);
   assert.equal(await count('아이들에게 쉽고 짧게 차근차근 알려 주세요 부탁해요'), 2);
   assert.equal(await count('나는 아이들을 가르치는 교사야. 아이들 눈높이에 맞게 짧고 간결하게 차근차근 설명해줘'), 3);
+});
+
+test('모델 이름 앞의 models/ 는 떼고, 목록에서는 generateContent 가능한 것만 고른다', async () => {
+  let url;
+  const ai = createGemini({ apiKey: 'k', model: ' models/gemini-x ', fetchImpl: async (u) => ((url = u), { ok: true, status: 200, json: async () => ({}) }) });
+  await ai.generate('x');
+  assert.match(url, /\/models\/gemini-x:generateContent$/);
+  const list = await listModels('k', reply({ models: [{ name: 'models/a', supportedGenerationMethods: ['generateContent'] }, { name: 'models/b', supportedGenerationMethods: ['embedContent'] }] }));
+  assert.deepEqual(list, ['a']);
 });
