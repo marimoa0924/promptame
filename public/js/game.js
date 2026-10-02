@@ -1,7 +1,7 @@
 // 게임 화면. 서버 이벤트를 받아 그리기만 하고, 시간 표시는 requestAnimationFrame 루프가 담당한다.
 // 네트워크 응답을 기다리는 동안에도 루프와 애니메이션은 계속 돈다.
 import { socket, session, request } from './net.js';
-import { $, refs, charSvg, EMOTES, toast, copyText, formatTime, replay } from './ui.js';
+import { $, refs, charSvg, toast, copyText, formatTime, replay } from './ui.js';
 import { applyTheme, sceneSvg, sparkle, SCENE_W, SCENE_TOP, SCENE_BOTTOM, SCENE_FLOOR } from './maps.js';
 import { coach } from './tutorial.js';
 import { checkPrompt } from '/shared/promptRules.js';
@@ -88,7 +88,6 @@ export class Game {
     };
     this.bindInput();
     this.bindChat();
-    this.bindEmotes();
     this.bindSocket();
     $('#room-code').addEventListener('click', () => this.room && copyText(this.room.code));
     requestAnimationFrame(() => this.tick());
@@ -368,7 +367,7 @@ export class Game {
     b.timers.bubble = setTimeout(() => el.classList.remove('show'), 3200);
   }
 
-  // 캐릭터를 누르면 폴짝 뛴다. 말은 이모티콘으로만 한다.
+  // 캐릭터를 누르면 폴짝 뛴다. 채팅 기능은 없다.
   bindChat() {
     for (const b of Object.values(this.boards)) b.r.avatar.addEventListener('click', () => replay(b.r.avatar, 'hop'));
   }
@@ -520,31 +519,7 @@ export class Game {
     this.frozenShown = frozen;
   }
 
-  // ---------- 이모티콘 / 타이핑 ----------
-
-  bindEmotes() {
-    const wrap = $('#emotes');
-    let last = 0;
-    for (const emoji of EMOTES) {
-      const btn = document.createElement('button');
-      btn.className = 'emote-btn';
-      btn.textContent = emoji;
-      btn.addEventListener('click', () => {
-        if (Date.now() - last < 800 || !this.room) return;
-        last = Date.now();
-        socket.emit('player:emote', { emoji });
-        this.popEmote(this.boards.me, emoji);
-        coach.emit('emote');
-      });
-      wrap.append(btn);
-    }
-  }
-
-  // 이모티콘은 캐릭터 대사로 취급해 상단 HUD 말풍선에 띄운다
-  popEmote(b, emoji) {
-    this.say(b, emoji);
-    replay(b.r.avatar, 'hop');
-  }
+  // ---------- 타이핑 ----------
 
   onTyping({ playerId, len }) {
     const b = this.boardOf(playerId);
@@ -562,10 +537,6 @@ export class Game {
     socket.on('ai:result', (d) => this.onAiResult(d));
     socket.on('ai:void', (d) => this.onAiVoid(d));
     socket.on('player:typing', (d) => this.onTyping(d));
-    socket.on('player:emote', ({ playerId, emoji }) => {
-      const b = this.boardOf(playerId);
-      if (b) this.popEmote(b, emoji);
-    });
     socket.on('game:event', (e) => {
       if (e.type === 'skip') {
         if (e.target === session.playerId) toast('⏭ 건너뛰었어요! 3초 뒤에 이어서 해요', 'info', 2500);

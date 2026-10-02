@@ -31,7 +31,7 @@ main에 올라온 UI와 서버(Express, Socket.IO)를 확인하고, 판정 모�
 | 어긋났던 것 | 고친 내용 |
 |---|---|
 | 상대의 프롬프트가 화면에 보였다 | 판이 끝날 때까지 서버가 보내지 않는다. 상대 보드에는 "비공개" 안내가 뜬다 |
-| 자유 문장 채팅(30자) | 없앴다. 캐릭터 말은 이모티콘으로만 한다. 튜토리얼 단계도 이모티콘으로 바꿨다 |
+| 채팅(자유 문장, 이모티콘) | 모두 없앴다. 봇의 이모티콘 반응과 튜토리얼 이모티콘 단계도 뺐다 |
 | 방 코드 5자리 | 6자리로 바꿨다 |
 | 카운트다운 중 나가면 상대 승리 | 판이 무효가 되어 대기실로 돌아간다 |
 | 연습봇과 튜토리얼이 옛 주제 데이터에 의존 | 새 문제 데이터와 목 AI로 바꿨다. 튜토리얼은 광합성 3문장 이내로 시작한다 |
@@ -48,7 +48,7 @@ main에 올라온 UI와 서버(Express, Socket.IO)를 확인하고, 판정 모�
 | D-1 | 두 번째 사람이 들어오면 곧바로 카운트다운이 시작된다(호스트 시작, 준비 버튼 없음) | 구현을 따른다. 스펙의 호스트 시작과 준비는 이후로 미룬다 [제안] |
 | D-2 | 맵 4종을 고를 수 있다. 확정은 동양풍만 구현이다 | 질문 Q-10 |
 | D-5 | 튜토리얼이 서버 방 하나로 돈다(목 AI). 첫 문제는 광합성이고 예시 프롬프트를 넣으면 PASS가 나온다. 스펙은 서버 없는 로컬 어댑터에 첫 전송 RETRY, 둘째 PASS | 구현을 따른다 [제안] |
-| D-6 | 이모티콘 6개, 쿨다운 0.8초 | 구현을 따른다 [제안] |
+| D-6 | 이모티콘 채팅 | 채팅 기능을 없애면서 함께 뺐다 [확정] |
 | D-7 | 결과 화면에 두 사람의 프롬프트 공개가 없다 | 남은 일 [제안] |
 | D-8 | 한 번 더 하기는 양쪽이 각자 누르면 시작한다. 10초 만료는 없다 | 구현을 따른다 [제안] |
 | D-11 | `playerId`가 탭마다 따로 저장된다(sessionStorage). 스펙은 브라우저에 저장 | 시험이 쉬워서 구현을 따른다. 탭을 닫으면 다른 사람이 된다 [제안] |
@@ -66,8 +66,8 @@ main에 올라온 UI와 서버(Express, Socket.IO)를 확인하고, 판정 모�
 
 | 방향 | 이벤트 |
 |---|---|
-| 클라이언트에서 서버 | `room:create`, `room:join`(재접속 겸용), `room:leave`, `room:rematch`, `room:addBot`, `prompt:submit`, `player:typing`, `player:emote`, `prompt:skip` |
-| 서버에서 클라이언트 | `room:state`(사람마다 따로 보내는 스냅샷), `ai:start`, `ai:chunk`, `ai:judge`, `ai:result`(판정 `verdict` 포함), `ai:void`, `player:typing`, `player:emote`, `game:event`(`freeze`, `skip`), `game:end` |
+| 클라이언트에서 서버 | `room:create`, `room:join`(재접속 겸용), `room:leave`, `room:rematch`, `room:addBot`, `prompt:submit`, `player:typing`, `prompt:skip` |
+| 서버에서 클라이언트 | `room:state`(사람마다 따로 보내는 스냅샷), `ai:start`, `ai:chunk`, `ai:judge`, `ai:result`(판정 `verdict` 포함), `ai:void`, `player:typing`, `game:event`(`freeze`, `skip`), `game:end` |
 
 ## 6. 남은 일 (우선순위 순)
 

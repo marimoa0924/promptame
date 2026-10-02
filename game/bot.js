@@ -12,7 +12,5 @@ const PROMPTS = [
 
 export const botPrompt = () => pickOne(PROMPTS);
 
-const EMOJI = { pass: ['😹', '🔥', '👍'], fail: ['😭', '🙏'] };
-export const botEmoji = (pass) => pickOne(pass ? EMOJI.pass : EMOJI.fail);
 
 export const BOT_NAMES = ['연습봇', '깡통봇', '삐빅봇'];
