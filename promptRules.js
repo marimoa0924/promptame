@@ -200,13 +200,78 @@ export function checkPrompt(prompt, problem, promptLimit = null) {
 // ---------------------------------------------------------------------------
 
 // 문장 끝 기호나 줄바꿈 뒤에서 문장을 나누고, 번호나 글머리표만 있는 조각은 문장으로 세지 않아요.
+// 각 조각이 원문 어디서 시작하는지도 같이 돌려줘요(분량 초과 위치 표시용).
+const SENTENCE_SEP = /(?<=[.!?。！？…])["'”’)\]]*\s+|\n+/gu;
+export function sentencePieces(text) {
+  const src = String(text);
+  const cuts = [];
+  let last = 0;
+  for (const m of src.matchAll(SENTENCE_SEP)) {
+    cuts.push([last, m.index]);
+    last = m.index + m[0].length;
+  }
+  cuts.push([last, src.length]);
+  return cuts
+    .map(([a, b]) => {
+      const raw = src.slice(a, b);
+      return { text: raw.trim(), start: a + (raw.length - raw.trimStart().length) };
+    })
+    .filter((p) => p.text && !/^(\d+[.)]|[-*•])$/.test(p.text));
+}
+
 export function countSentences(text) {
-  const pieces = String(text)
-    .trim()
-    .split(/(?<=[.!?。！？…])["'”’)\]]*\s+|\n+/u)
-    .map((s) => s.trim())
-    .filter((s) => s && !/^(\d+[.)]|[-*•])$/.test(s));
-  return pieces.length;
+  return sentencePieces(text).length;
+}
+
+// AI 답변에서 필수어가 나온 곳을 원문 위치로 돌려줘요. 띄어쓰기, 특수문자, 대소문자는 판정처럼 무시해요.
+// 평가 연출에서 필수어를 형광펜으로 칠할 때 써요. 결과: [{ keyword, start, end }] (end는 포함하지 않는 위치)
+export function locateMatches(answer, keywords) {
+  const raw = String(answer ?? '');
+  const text = raw.normalize('NFC');
+  if (text !== raw) return []; // 조합 방식이 다른 글자가 섞이면 위치가 어긋나서 칠하지 않아요
+  let loose = '';
+  const map = []; // loose의 각 글자가 원문 어디서 왔는지
+  let pos = 0;
+  for (const ch of text) {
+    const start = pos;
+    pos += ch.length;
+    const cp = ch.codePointAt(0);
+    const folded = (cp >= 0x3131 && cp <= 0x318e ? ch : ch.normalize('NFKC')).toLowerCase().replace(NOISE, '');
+    for (const c of folded) {
+      loose += c;
+      for (let u = 0; u < c.length; u++) map.push([start, pos]);
+    }
+  }
+  const out = [];
+  for (const keyword of keywords) {
+    const k = normalizeLoose(keyword);
+    if (!k) continue;
+    for (let i = loose.indexOf(k); i !== -1; i = loose.indexOf(k, i + k.length)) {
+      out.push({ keyword, start: map[i][0], end: map[i + k.length - 1][1] });
+    }
+  }
+  return out.sort((a, b) => a.start - b.start);
+}
+
+// 분량을 넘긴 답변에서 넘기 시작하는 위치를 돌려줘요. 안 넘었으면 null이에요.
+export function locateOverflow(answer, lengthRule) {
+  const text = String(answer ?? '');
+  if (lengthRule.type === 'sentences') {
+    const pieces = sentencePieces(text);
+    return pieces.length > lengthRule.value ? pieces[lengthRule.value].start : null;
+  }
+  let count = 0;
+  let idx = 0;
+  for (const ch of text) {
+    if (ch === '\r' && text[idx + 1] === '\n') {
+      idx += 1; // \r\n은 한 글자로 세요(countChars와 같게)
+      continue;
+    }
+    if (count === lengthRule.value) return idx;
+    count += 1;
+    idx += ch.length;
+  }
+  return null;
 }
 
 // 난이도별 필수어 최소 개수예요. problems.json의 difficultyRules가 있으면 그것을 써요.

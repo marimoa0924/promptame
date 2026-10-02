@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {
-  checkPrompt, findLengthSpec, checkAnswer, countSentences, countChars, composeJamo, drawQuestion, drawSequence,
+  checkPrompt, findLengthSpec, locateMatches, locateOverflow, sentencePieces, checkAnswer, countSentences, countChars, composeJamo, drawQuestion, drawSequence,
 } from './promptRules.js';
 
 const data = JSON.parse(fs.readFileSync(new URL('./problems.json', import.meta.url), 'utf8'));
@@ -175,4 +175,26 @@ test('쉬움 문제는 일상적인 낱말이고 필수어를 하나만 담아�
   assert.equal(checkAnswer('빨간 과일이에요.', apple, { type: 'chars', value: 50 }, data.difficultyRules).pass, true);
   assert.equal(checkAnswer('맛있어요.', apple, { type: 'chars', value: 50 }, data.difficultyRules).pass, false);
   assert.equal(blocked('계란 알려줘', byTopic('달걀')), true); // 같은 뜻의 다른 말도 막는다
+});
+
+test('필수어가 나온 위치를 원문 기준으로 찾는다(띄어쓰기와 대소문자 무시)', () => {
+  const text = '세포 호흡으로 atp를 만들고, 또 ATP도 써요.';
+  const spans = locateMatches(text, ['세포호흡', 'ATP', '없는말']);
+  assert.deepEqual(spans.map((s) => text.slice(s.start, s.end)), ['세포 호흡', 'atp', 'ATP']);
+  assert.deepEqual(spans.map((s) => s.keyword), ['세포호흡', 'ATP', 'ATP']);
+  assert.deepEqual(locateMatches('', ['가나']), []);
+  const emoji = '😀 치즈와 😀 토마토';
+  assert.deepEqual(locateMatches(emoji, ['치즈', '토마토']).map((s) => emoji.slice(s.start, s.end)), ['치즈', '토마토']);
+});
+
+test('분량을 넘기기 시작한 위치(글자, 문장)', () => {
+  assert.equal(locateOverflow('가나다라마', { type: 'chars', value: 3 }), 3);
+  assert.equal(locateOverflow('가나다', { type: 'chars', value: 3 }), null);
+  assert.equal(locateOverflow('😀😀😀😀', { type: 'chars', value: 2 }), 4); // 이모지는 두 칸이지만 한 글자
+  const t = '하나예요. 둘이에요. 셋이에요. 넷이에요.';
+  assert.equal(t.slice(locateOverflow(t, { type: 'sentences', value: 2 })), '셋이에요. 넷이에요.');
+  assert.equal(locateOverflow(t, { type: 'sentences', value: 4 }), null);
+  for (const x of [t, '1. 첫째\n2. 둘째\n3. 셋째', '끝 기호 없이', '원주율은 3.14예요. 정말요?']) {
+    assert.equal(sentencePieces(x).length, countSentences(x), x);
+  }
 });

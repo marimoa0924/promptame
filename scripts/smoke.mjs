@@ -19,6 +19,15 @@ a.on('ai:result', (d) => { counts.result++; console.log(`  result ${d.playerId}:
 a.on('room:state', (r) => (lastState = r));
 a.on('game:end', (e) => { lastEnd = e; console.log(`  game:end ${e.reason} winner=${e.winnerId} duration=${e.durationMs}ms`); });
 
+// ---- 0) 보안: 다른 사이트(Origin)에서의 접속 거절, 요청 폭주 제한 ----
+const evil = io(URL, { transports: ['websocket'], extraHeaders: { Origin: 'http://evil.example' }, reconnection: false });
+const evilResult = await new Promise((r) => { evil.on('connect', () => r('연결됨(문제!)')); evil.on('connect_error', () => r('거절됨')); setTimeout(() => r('응답 없음'), 3000); });
+console.log('다른 Origin 접속:', evilResult);
+evil.close();
+const burst = await Promise.all(Array.from({ length: 120 }, () => ask(a, 'ranking:get', { device: 'smoke-device-0001' })));
+console.log('폭주 제한:', burst.filter((x) => x.ok).length, '건 처리,', burst.filter((x) => !x.ok).length, '건 거절');
+await sleep(1100);
+
 // ---- 1) 사람 대 사람 ----
 console.log('bad nickname:', (await ask(a, 'room:create', { playerId: 'player-XXXX', profile: { name: '씨발', char: 'cat' }, settings: {} })).error);
 console.log('long nickname:', (await ask(a, 'room:create', { playerId: 'player-XXXX', profile: { name: '가나다라마바사아자', char: 'cat' }, settings: {} })).error);

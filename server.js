@@ -40,7 +40,25 @@ for (const file of ['promptRules.js', 'nickname.js']) {
 }
 const httpServer = createServer(app);
 // 메시지 한 건은 8KB까지만 받는다 (프롬프트 최대 2000자는 이 안에 들어간다)
-const io = new Server(httpServer, { maxHttpBufferSize: 8 * 1024 });
+// 다른 사이트에서 이 서버로 몰래 접속하는 것을 막는다: 브라우저가 보내는 Origin이 이 서버 주소와 같을 때만 받는다.
+// Origin이 없는 접속(서버 점검 스크립트 등)은 받는다. 프록시 뒤에서 주소가 다르면 ALLOWED_ORIGINS에 쉼표로 적는다.
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+function originAllowed(req) {
+  const origin = req.headers.origin;
+  if (!origin) return true;
+  try {
+    const host = new URL(origin).host;
+    return host === req.headers.host || ALLOWED_ORIGINS.includes(origin) || ALLOWED_ORIGINS.includes(host);
+  } catch {
+    return false;
+  }
+}
+const io = new Server(httpServer, {
+  maxHttpBufferSize: 8 * 1024,
+  allowRequest: (req, cb) => cb(null, originAllowed(req)),
+});
+const RATE_LIMIT_PER_SEC = 40; // 소켓 하나가 1초에 보낼 수 있는 요청 수
+const MAX_ROOMS = Number(process.env.MAX_ROOMS) || 500;
 
 const rooms = new Map();
 
@@ -72,7 +90,7 @@ function cleanSettings(s = {}) {
     return { title: '튜토리얼', difficulty: 'normal', map: pick(s.map, MAPS, 'east'), timeLimit: 300, promptLimit: 150, tutorial: true };
   }
   return {
-    title: String(s.title ?? '').trim().slice(0, 20) || '프롬프트 한 판!',
+    title: ((t) => (t.length >= 2 ? t : '프롬프트 한 판!'))(String(s.title ?? '').trim().slice(0, 20)), // 2~20자
     difficulty: pick(s.difficulty, ['easy', 'normal', 'hard', 'expert'], 'normal'),
     map: pick(s.map, MAPS, 'east'),
     timeLimit: pick(Number(s.timeLimit), [120, 180, 300], 180),
@@ -84,6 +102,20 @@ const reply = (ack, value) => typeof ack === 'function' && ack(value);
 const validId = (id) => typeof id === 'string' && id.length >= 8 && id.length <= 64;
 
 io.on('connection', (socket) => {
+  // 너무 빠르게 몰아서 보내는 요청은 받지 않는다
+  let windowStart = Date.now();
+  let count = 0;
+  socket.use((packet, next) => {
+    const now = Date.now();
+    if (now - windowStart >= 1000) {
+      windowStart = now;
+      count = 0;
+    }
+    if (++count <= RATE_LIMIT_PER_SEC) return next();
+    const ack = packet.at(-1);
+    if (typeof ack === 'function') ack({ ok: false, error: '요청이 너무 많아요. 잠깐만 기다려 주세요' });
+  });
+
   const currentRoom = () => rooms.get(socket.data.roomCode);
 
   socket.on('room:create', ({ playerId, profile, settings } = {}, ack) => {
@@ -91,6 +123,7 @@ io.on('connection', (socket) => {
     const who = cleanProfile(profile);
     if (!who.ok) return reply(ack, who);
     currentRoom()?.leave(socket.data.playerId);
+    if (rooms.size >= MAX_ROOMS) return reply(ack, { ok: false, error: '지금은 방을 더 만들 수 없어요. 잠시 후 다시 시도해 주세요' });
     const code = newCode();
     const room = new Room(io, code, cleanSettings(settings), (c) => rooms.delete(c), ai, {}, { seen, ranking });
     rooms.set(code, room);

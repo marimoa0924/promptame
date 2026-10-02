@@ -3,6 +3,7 @@ import { $, refs, CHARACTERS, charSvg, formatTime, replay } from './ui.js';
 
 const REASON = {
   timeup: '시간 종료!',
+  aborted: '두 사람 모두 연결이 끊겨 판이 무효가 됐어요',
 };
 
 export class Finale {
@@ -62,12 +63,12 @@ export class Finale {
     const { r, result, meId } = this;
     const me = result.players.find((p) => p.id === meId);
     const opp = result.players.find((p) => p.id !== meId);
-    const outcome = result.winnerId === null ? 'draw' : result.winnerId === meId ? 'win' : 'lose';
+    const outcome = result.reason === 'aborted' ? 'void' : result.winnerId === null ? 'draw' : result.winnerId === meId ? 'win' : 'lose';
 
     r.intro.hidden = true;
     r.card.hidden = false;
     r.card.className = `finale-card ${outcome}`;
-    r.title.textContent = { win: 'WIN!', lose: 'LOSE…', draw: 'DRAW' }[outcome];
+    r.title.textContent = { win: 'WIN!', lose: 'LOSE…', draw: 'DRAW', void: '무효' }[outcome];
     r.reason.textContent =
       result.reason === 'forfeit'
         ? result.leaverId === meId
@@ -87,7 +88,7 @@ export class Finale {
       ['내 포인트', `${me?.score ?? 0} PASS`],
     ];
     if (opp) rows.push([`${opp.name}`, `${opp.score} PASS`]);
-    rows.push(['결과', { win: '승리', lose: '패배', draw: '무승부' }[outcome]]);
+    rows.push(['결과', { win: '승리', lose: '패배', draw: '무승부', void: '무효' }[outcome]]);
     const rk = result.ranking?.[meId];
     if (rk) {
       rows.push(rk.counted
@@ -100,8 +101,32 @@ export class Finale {
       row.querySelector('dd').textContent = rows[i][1];
     });
 
+    this.renderHistory(result, meId);
+
     if (outcome === 'win') this.fireworks.start();
     else this.fireworks.stop();
+  }
+
+  // 판이 끝났으니 두 사람이 보낸 프롬프트와 AI 답변을 공개한다
+  renderHistory(result, meId) {
+    const { historyBox, history } = this.r;
+    historyBox.hidden = !result.history?.length;
+    history.replaceChildren();
+    const mk = (tag, cls, text) => Object.assign(document.createElement(tag), { className: cls ?? '', textContent: text ?? '' });
+    const ordered = [...(result.history ?? [])].sort((a, b) => (b.playerId === meId) - (a.playerId === meId));
+    for (const who of ordered) {
+      history.append(mk('h3', '', who.playerId === meId ? `내 프롬프트 (${who.name})` : `${who.name}의 프롬프트`));
+      if (!who.entries.length) history.append(mk('p', 'none', '보낸 프롬프트가 없어요'));
+      for (const e of who.entries) {
+        const item = mk('div', 'history-item');
+        const meta = mk('div', 'meta');
+        meta.append(mk('span', `badge${e.pass ? '' : ' fail'}`, e.pass ? 'PASS' : 'RETRY'), mk('span', '', `${e.topic} · ${e.attempt}번째 시도`));
+        const details = mk('details');
+        details.append(mk('summary', '', `AI 답변 · ${e.reason}`), mk('p', '', e.answer));
+        item.append(meta, mk('p', 'prompt', e.prompt), details);
+        history.append(item);
+      }
+    }
   }
 
   // 상대의 한번 더 하기 여부를 보여 준다

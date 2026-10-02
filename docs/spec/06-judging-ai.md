@@ -40,7 +40,7 @@
 
 1. **잘림 값**: `checkAnswer(answer, problem, lengthRule, difficultyRules, opts)`에서 `opts.truncated`를 받는다. true면 분량 초과로 보아 `pass=false`, `lengthOk=false`로 한다. 결과에 `truncated`를 담는다.
 2. **실패 이유 목록**: 결과에 `reasons`(`KEYWORD_SHORT`, `LENGTH_OVER`, `TRUNCATED`, `EMPTY`)를 추가해 UI가 RETRY 이유를 보여 주게 한다.
-3. **필수어 위치**: `locateMatches(answer, keywords)`로 원문에서 필수어가 나온 위치를 돌려준다. 하이라이트용이다. 공백과 특수문자를 지운 상태로 매칭하기 때문에 위치를 원문 기준으로 되돌리는 처리가 필요하다.
+3. **필수어 위치와 분량 초과 위치**: `locateMatches(answer, keywords)`와 `locateOverflow(answer, lengthRule)`를 구현했다. 판정처럼 띄어쓰기, 특수문자, 대소문자를 무시하고 원문 위치를 돌려준다. 조합 방식이 다른 글자(NFC가 아닌 것)가 섞이면 칠하지 않는다.
 4. **문제 목록 만들기**: `drawSequence(data, difficulty, count, rng)`로 40개를 한 번에 뽑는다. 난이도 풀을 다 쓰면 다시 섞어 이어 붙인다. 난수 시드를 받게 해서 테스트가 재현되도록 한다.
 5. 위 4개에 대한 테스트를 추가한다.
 

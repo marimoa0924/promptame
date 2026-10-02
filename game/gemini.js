@@ -105,13 +105,17 @@ export function createGemini({
 }
 
 // 오류, 시간 초과, 빈 응답이면 같은 프롬프트로 다시 시도한다. 유저가 보낸 횟수로는 세지 않는다.
-export async function generateWithRetry(ai, prompt, ctx = {}, { retries = AI_RETRY_MAX, waitMs = RETRY_WAIT_MS } = {}) {
+// onRetry(n)은 n번째 재시도에 들어가기 직전에 불린다(화면에 "다시 시도하는 중"을 띄우는 용도)
+export async function generateWithRetry(ai, prompt, ctx = {}, { retries = AI_RETRY_MAX, waitMs = RETRY_WAIT_MS, onRetry } = {}) {
   let last;
   for (let i = 0; i <= retries; i++) {
     if (ctx.signal?.aborted) return { status: 'ERROR', text: '', truncated: false, finishReason: 'ABORTED', latencyMs: 0, usage: null };
     last = await ai.generate(prompt, ctx);
     if (last.status === 'OK') return last;
-    if (i < retries) await sleep(waitMs);
+    if (i < retries) {
+      onRetry?.(i + 1);
+      await sleep(waitMs);
+    }
   }
   return last;
 }

@@ -649,3 +649,24 @@ body.shake { animation: shake 0.12s steps(2) 5; }
 .ranking-list .rk-score { text-align: right; font-weight: 700; }
 .ranking-empty { text-align: center; padding: 18px 0; opacity: 0.7; }
 .ranking-rules { font-size: 0.75rem; margin: 0 0 12px; }
+
+/* 평가 연출: 필수어(노랑)와 분량 초과(빨간 물결 밑줄). 그 줄을 읽을 때부터 보인다 */
+.line mark.kw { background: #ffe066; color: #1a1a1a; box-shadow: 0 -2px 0 #ffe066, 0 2px 0 #ffe066; }
+.line .over, .line mark.kw.over { text-decoration: underline wavy var(--danger, #e0245e); text-decoration-thickness: 2px; }
+.line:not(.reading):not(.read) mark.kw { background: none; color: inherit; box-shadow: none; }
+.line:not(.reading):not(.read) .over { text-decoration: none; }
+
+/* 결과 화면: 프롬프트 돌아보기 */
+.history { margin: 6px 3px 10px; text-align: left; }
+.history > summary { cursor: pointer; padding: 8px 12px; background: var(--paper); box-shadow: var(--frame-sm); font-weight: 700; }
+.history-body { max-height: 32vh; overflow-y: auto; padding: 8px 4px 0; }
+.history h3 { margin: 10px 0 6px; font-size: 0.95rem; }
+.history .none { opacity: 0.7; font-size: 0.85rem; margin: 4px 0; }
+.history-item { margin: 0 0 8px; padding: 8px 10px; background: var(--paper); box-shadow: var(--frame-sm); font-size: 0.85rem; }
+.history-item .meta { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; opacity: 0.85; }
+.history-item .badge { padding: 0 6px; font-weight: 700; color: #fff; background: var(--accent); }
+.history-item .badge.fail { background: var(--bsod, #1d4ed8); }
+.history-item .prompt { white-space: pre-wrap; word-break: break-word; margin: 0; }
+.history-item details { margin-top: 4px; opacity: 0.9; }
+.history-item details p { white-space: pre-wrap; margin: 4px 0 0; }
+.finale-card.void .result-title { color: var(--muted); }

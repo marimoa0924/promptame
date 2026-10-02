@@ -11,7 +11,7 @@ const rooms = [];
 afterEach(() => {
   for (const r of rooms.splice(0)) r.close();
 });
-const FAST = { countdownMs: 20, replayTickMs: 1, judgeBaseMs: 5, judgePerLineMs: 1, endGraceMs: 600, waitTtlMs: 600_000 };
+const FAST = { countdownMs: 20, replayTickMs: 1, judgeBaseMs: 5, judgePerLineMs: 1, endGraceMs: 600, waitTtlMs: 600_000, submitGapMs: 0, rematchMs: 600_000 };
 
 // 프롬프트에 XQZ1이 들어 있으면 필수어를 모두 담은 짧은 답, XQZ2도 있으면 분량 초과, 그 외에는 필수어 없는 답
 // (영어 PASS는 어떤 문제의 금지어와 겹쳐서 쓰지 않는다)
@@ -311,4 +311,86 @@ test('튜토리얼과 연습봇 판은 랭킹에 반영하지 않는다', async 
   await until(() => room.state === 'ended');
   assert.equal(hooks.ranking.top().length, 0);
   assert.deepEqual(hooks.seen.ids('devT-0001'), []);
+});
+
+test('전송 최소 간격보다 빨리 다시 보내면 거절한다', async () => {
+  const c = setup({ timing: { ...FAST, submitGapMs: 300 } });
+  await playing(c);
+  assert.equal(c.room.submit('pA', '엉뚱한 말').ok, true);
+  await answered(c);
+  const fast = c.room.submit('pA', '엉뚱한 말 둘');
+  assert.equal(fast.ok, false);
+  assert.match(fast.error, /너무 빨라요/);
+  assert.equal(c.room.players.get('pA').attempts, 1); // 거절된 전송은 시도로 세지 않는다
+  await sleep(320);
+  assert.equal(c.room.submit('pA', '엉뚱한 말 셋').ok, true);
+});
+
+test('판이 끝나면 두 사람이 보낸 프롬프트가 결과에 공개된다(그 전에는 상대 것을 안 준다)', async () => {
+  const c = setup({ settings: { timeLimit: 0.6 } });
+  await playing(c);
+  c.room.submit('pA', 'XQZ1 첫 프롬프트');
+  await answered(c);
+  c.room.submit('pB', '엉뚱한 말');
+  await answered(c);
+  assert.equal(c.room.snapshot('pA').lastResult, null); // 아직 진행 중
+  await until(() => c.room.state === 'ended');
+  const h = c.events('game:end').at(-1).payload.history;
+  assert.deepEqual(h.map((x) => x.name), ['에이', '비이']);
+  assert.equal(h[0].entries[0].prompt, 'XQZ1 첫 프롬프트');
+  assert.equal(h[0].entries[0].pass, true);
+  assert.equal(h[1].entries[0].pass, false);
+  assert.ok(h[0].entries[0].topic && h[0].entries[0].answer);
+});
+
+test('평가 연출용으로 필수어 위치와 분량 초과 위치를 함께 보낸다', async () => {
+  const c = setup();
+  await playing(c);
+  c.room.submit('pA', 'XQZ1 XQZ2');
+  await answered(c);
+  const j = c.events('ai:judge').at(-1).payload;
+  assert.ok(j.len > 0);
+  assert.ok(j.marks.length > 0 && j.marks.every((m) => m.start >= 0 && m.end > m.start && m.end <= j.len));
+  assert.equal(typeof j.over, 'number'); // 분량을 넘겼다
+  c.room.submit('pA', 'XQZ1');
+  await answered(c);
+  assert.equal(c.events('ai:judge').at(-1).payload.over, null); // 넘지 않았다
+});
+
+test('AI 재시도 중에는 전송한 사람에게 알린다', async () => {
+  const c = setup({ ai: fakeAI({ status: 'ERROR' }) });
+  await playing(c);
+  c.room.submit('pA', 'XQZ1');
+  await until(() => c.events('ai:void').length === 1, 5000);
+  const retries = c.events('ai:retrying');
+  assert.deepEqual(retries.map((r) => r.payload.n), [1, 2]);
+  assert.ok(retries.every((r) => r.target === 'sA'));
+});
+
+test('두 사람이 모두 끊겨 있으면 판이 무효가 되고 랭킹에 반영되지 않는다', async () => {
+  const store = createJsonStore(null);
+  const hooks = { seen: createSeen(store), ranking: createRanking(store) };
+  const c = setup({ hooks, devices: { pA: 'devA-0001', pB: 'devB-0001' } });
+  await playing(c);
+  c.room.socketDropped('pA', 'sA');
+  c.room.socketDropped('pB', 'sB');
+  c.room.leave('pA'); // 먼저 시간이 지난 쪽
+  const end = c.events('game:end').at(-1).payload;
+  assert.equal(end.reason, 'aborted');
+  assert.equal(end.winnerId, null);
+  assert.equal(end.ranking, undefined);
+  assert.equal(hooks.ranking.top().length, 0);
+});
+
+test('한 번 더 하기 요청은 시간 안에 응답이 없으면 취소된다', async () => {
+  const c = setup({ settings: { timeLimit: 0.1 }, timing: { ...FAST, rematchMs: 80 } });
+  await until(() => c.room.state === 'ended');
+  c.room.rematch('pA');
+  assert.equal(c.room.players.get('pA').ready, true);
+  await until(() => c.events('rematch:expired').length === 1);
+  assert.equal(c.room.players.get('pA').ready, false);
+  assert.equal(c.room.state, 'ended');
+  c.room.rematch('pA'); // 다시 요청할 수 있다
+  c.room.rematch('pB');
+  assert.equal(c.room.state, 'countdown');
 });
