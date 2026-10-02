@@ -8,7 +8,7 @@
         "장마",
         "빗방울"
       ],
-      "difficulty": "쉬움",
+      "difficulty": "보통",
       "category": "생활",
       "extraForbidden": [
         "rain",
@@ -27,7 +27,7 @@
         "토마토",
         "도우"
       ],
-      "difficulty": "쉬움",
+      "difficulty": "보통",
       "category": "음식",
       "extraForbidden": [
         "pizza",
@@ -44,7 +44,7 @@
         "꼬리",
         "후각"
       ],
-      "difficulty": "쉬움",
+      "difficulty": "보통",
       "category": "동물",
       "extraForbidden": [
         "dog",
@@ -61,7 +61,7 @@
         "바퀴",
         "체인"
       ],
-      "difficulty": "쉬움",
+      "difficulty": "보통",
       "category": "생활",
       "extraForbidden": [
         "bicycle",
@@ -78,7 +78,7 @@
         "줄기",
         "나이테"
       ],
-      "difficulty": "쉬움",
+      "difficulty": "보통",
       "category": "과학",
       "extraForbidden": [
         "tree",
@@ -95,7 +95,7 @@
         "프리즘",
         "굴절"
       ],
-      "difficulty": "쉬움",
+      "difficulty": "보통",
       "category": "과학",
       "extraForbidden": [
         "rainbow",
@@ -112,7 +112,7 @@
         "배추",
         "고춧가루"
       ],
-      "difficulty": "쉬움",
+      "difficulty": "보통",
       "category": "음식",
       "extraForbidden": [
         "kimchi",
@@ -129,7 +129,7 @@
         "발톱",
         "야행성"
       ],
-      "difficulty": "쉬움",
+      "difficulty": "보통",
       "category": "동물",
       "extraForbidden": [
         "cat",
@@ -146,7 +146,7 @@
         "서가",
         "열람"
       ],
-      "difficulty": "쉬움",
+      "difficulty": "보통",
       "category": "문화예술",
       "extraForbidden": [
         "library",
@@ -163,7 +163,7 @@
         "드리블",
         "패스"
       ],
-      "difficulty": "쉬움",
+      "difficulty": "보통",
       "category": "문화예술",
       "extraForbidden": [
         "soccer",
@@ -180,7 +180,7 @@
         "승객",
         "노선"
       ],
-      "difficulty": "쉬움",
+      "difficulty": "보통",
       "category": "생활",
       "extraForbidden": [
         "bus",
@@ -197,7 +197,7 @@
         "우유",
         "당분"
       ],
-      "difficulty": "쉬움",
+      "difficulty": "보통",
       "category": "음식",
       "extraForbidden": [
         "ice cream",
@@ -214,7 +214,7 @@
         "날개",
         "번데기"
       ],
-      "difficulty": "쉬움",
+      "difficulty": "보통",
       "category": "동물",
       "extraForbidden": [
         "butterfly",
@@ -231,7 +231,7 @@
         "지구",
         "궤도"
       ],
-      "difficulty": "쉬움",
+      "difficulty": "보통",
       "category": "과학",
       "extraForbidden": [
         "full moon",
@@ -249,7 +249,7 @@
         "모음",
         "음절"
       ],
-      "difficulty": "쉬움",
+      "difficulty": "보통",
       "category": "문화예술",
       "extraForbidden": [
         "Hangul",
@@ -266,7 +266,7 @@
         "흥정",
         "물건"
       ],
-      "difficulty": "쉬움",
+      "difficulty": "보통",
       "category": "사회",
       "extraForbidden": [
         "market",
@@ -283,7 +283,7 @@
         "방위",
         "기호"
       ],
-      "difficulty": "쉬움",
+      "difficulty": "보통",
       "category": "사회",
       "extraForbidden": [
         "map",
@@ -300,7 +300,7 @@
         "카메라",
         "구도"
       ],
-      "difficulty": "쉬움",
+      "difficulty": "보통",
       "category": "문화예술",
       "extraForbidden": [
         "photograph",
@@ -317,7 +317,7 @@
         "마우스",
         "화면"
       ],
-      "difficulty": "쉬움",
+      "difficulty": "보통",
       "category": "정보기술",
       "extraForbidden": [
         "computer",
@@ -334,7 +334,7 @@
         "단백질",
         "지방"
       ],
-      "difficulty": "쉬움",
+      "difficulty": "보통",
       "category": "음식",
       "extraForbidden": [
         "milk",
@@ -351,7 +351,7 @@
         "포도당",
         "산소"
       ],
-      "difficulty": "보통",
+      "difficulty": "어려움",
       "category": "과학",
       "extraForbidden": [
         "photosynthesis",
@@ -368,7 +368,7 @@
         "에너지",
         "ATP"
       ],
-      "difficulty": "보통",
+      "difficulty": "어려움",
       "category": "과학",
       "extraForbidden": [
         "mitochondria",
@@ -386,7 +386,7 @@
         "온도",
         "기화"
       ],
-      "difficulty": "보통",
+      "difficulty": "어려움",
       "category": "과학",
       "extraForbidden": [
         "evaporation",
@@ -403,7 +403,7 @@
         "진원",
         "진동"
       ],
-      "difficulty": "보통",
+      "difficulty": "어려움",
       "category": "과학",
       "extraForbidden": [
         "earthquake",
@@ -420,7 +420,7 @@
         "용암",
         "분화"
       ],
-      "difficulty": "보통",
+      "difficulty": "어려움",
       "category": "과학",
       "extraForbidden": [
         "volcano",
@@ -437,7 +437,7 @@
         "생산자",
         "분해자"
       ],
-      "difficulty": "보통",
+      "difficulty": "어려움",
       "category": "과학",
       "extraForbidden": [
         "ecosystem",
@@ -454,7 +454,7 @@
         "선거",
         "시민"
       ],
-      "difficulty": "보통",
+      "difficulty": "어려움",
       "category": "사회",
       "extraForbidden": [
         "democracy",
@@ -471,7 +471,7 @@
         "공급",
         "가격"
       ],
-      "difficulty": "보통",
+      "difficulty": "어려움",
       "category": "사회",
       "extraForbidden": [
         "market economy",
@@ -488,7 +488,7 @@
         "사망률",
         "고령화"
       ],
-      "difficulty": "보통",
+      "difficulty": "어려움",
       "category": "사회",
       "extraForbidden": [
         "population",
@@ -505,7 +505,7 @@
         "공장",
         "기계화"
       ],
-      "difficulty": "보통",
+      "difficulty": "어려움",
       "category": "역사",
       "extraForbidden": [
         "Industrial Revolution",
@@ -522,7 +522,7 @@
         "한양",
         "과거제"
       ],
-      "difficulty": "보통",
+      "difficulty": "어려움",
       "category": "역사",
       "extraForbidden": [
         "Joseon period",
@@ -539,7 +539,7 @@
         "비색",
         "도자기"
       ],
-      "difficulty": "보통",
+      "difficulty": "어려움",
       "category": "역사",
       "extraForbidden": [
         "Goryeo celadon",
@@ -556,7 +556,7 @@
         "소장",
         "영양소"
       ],
-      "difficulty": "보통",
+      "difficulty": "어려움",
       "category": "생활",
       "extraForbidden": [
         "digestion",
@@ -573,7 +573,7 @@
         "전류",
         "저항"
       ],
-      "difficulty": "보통",
+      "difficulty": "어려움",
       "category": "과학",
       "extraForbidden": [
         "electric circuit",
@@ -590,7 +590,7 @@
         "서버",
         "주소"
       ],
-      "difficulty": "보통",
+      "difficulty": "어려움",
       "category": "정보기술",
       "extraForbidden": [
         "internet",
@@ -607,7 +607,7 @@
         "알고리즘",
         "모델"
       ],
-      "difficulty": "보통",
+      "difficulty": "어려움",
       "category": "정보기술",
       "extraForbidden": [
         "artificial intelligence",
@@ -624,7 +624,7 @@
         "인물",
         "갈등"
       ],
-      "difficulty": "보통",
+      "difficulty": "어려움",
       "category": "문화예술",
       "extraForbidden": [
         "novel",
@@ -641,7 +641,7 @@
         "소리꾼",
         "고수"
       ],
-      "difficulty": "보통",
+      "difficulty": "어려움",
       "category": "문화예술",
       "extraForbidden": [
         "pansori",
@@ -658,7 +658,7 @@
         "찹쌀",
         "증편"
       ],
-      "difficulty": "보통",
+      "difficulty": "어려움",
       "category": "음식",
       "extraForbidden": [
         "rice cake",
@@ -675,7 +675,7 @@
         "생선",
         "와사비"
       ],
-      "difficulty": "보통",
+      "difficulty": "어려움",
       "category": "음식",
       "extraForbidden": [
         "sushi",
@@ -692,7 +692,7 @@
         "중력",
         "광속"
       ],
-      "difficulty": "어려움",
+      "difficulty": "매우 어려움",
       "category": "과학",
       "extraForbidden": [
         "theory of relativity",
@@ -709,7 +709,7 @@
         "중첩",
         "불확정성"
       ],
-      "difficulty": "어려움",
+      "difficulty": "매우 어려움",
       "category": "과학",
       "extraForbidden": [
         "quantum mechanics",
@@ -726,7 +726,7 @@
         "유전자형",
         "표현형"
       ],
-      "difficulty": "어려움",
+      "difficulty": "매우 어려움",
       "category": "과학",
       "extraForbidden": [
         "genetics",
@@ -743,7 +743,7 @@
         "항원",
         "면역세포"
       ],
-      "difficulty": "어려움",
+      "difficulty": "매우 어려움",
       "category": "생활",
       "extraForbidden": [
         "immune response",
@@ -760,7 +760,7 @@
         "학습",
         "신경회로"
       ],
-      "difficulty": "어려움",
+      "difficulty": "매우 어려움",
       "category": "과학",
       "extraForbidden": [
         "neuroplasticity",
@@ -777,7 +777,7 @@
         "맨틀",
         "판경계"
       ],
-      "difficulty": "어려움",
+      "difficulty": "매우 어려움",
       "category": "과학",
       "extraForbidden": [
         "plate tectonics",
@@ -794,7 +794,7 @@
         "휴리스틱",
         "편향"
       ],
-      "difficulty": "어려움",
+      "difficulty": "매우 어려움",
       "category": "사회",
       "extraForbidden": [
         "behavioral economics",
@@ -811,7 +811,7 @@
         "주권",
         "합의"
       ],
-      "difficulty": "어려움",
+      "difficulty": "매우 어려움",
       "category": "사회",
       "extraForbidden": [
         "social contract theory",
@@ -828,7 +828,7 @@
         "선택",
         "대안"
       ],
-      "difficulty": "어려움",
+      "difficulty": "매우 어려움",
       "category": "사회",
       "extraForbidden": [
         "opportunity cost",
@@ -845,7 +845,7 @@
         "무역",
         "다국적기업"
       ],
-      "difficulty": "어려움",
+      "difficulty": "매우 어려움",
       "category": "사회",
       "extraForbidden": [
         "globalization",
@@ -862,7 +862,7 @@
         "원근법",
         "고전주의"
       ],
-      "difficulty": "어려움",
+      "difficulty": "매우 어려움",
       "category": "역사",
       "extraForbidden": [
         "Renaissance",
@@ -879,7 +879,7 @@
         "보존",
         "재활용"
       ],
-      "difficulty": "어려움",
+      "difficulty": "매우 어려움",
       "category": "역사",
       "extraForbidden": [
         "industrial heritage",
@@ -896,7 +896,7 @@
         "상속",
         "캡슐화"
       ],
-      "difficulty": "어려움",
+      "difficulty": "매우 어려움",
       "category": "정보기술",
       "extraForbidden": [
         "object-oriented programming",
@@ -913,7 +913,7 @@
         "학습데이터",
         "검증"
       ],
-      "difficulty": "어려움",
+      "difficulty": "매우 어려움",
       "category": "정보기술",
       "extraForbidden": [
         "machine learning",
@@ -930,7 +930,7 @@
         "테이블",
         "기본키"
       ],
-      "difficulty": "어려움",
+      "difficulty": "매우 어려움",
       "category": "정보기술",
       "extraForbidden": [
         "database",
@@ -947,7 +947,7 @@
         "모네",
         "야외회화"
       ],
-      "difficulty": "어려움",
+      "difficulty": "매우 어려움",
       "category": "문화예술",
       "extraForbidden": [
         "Impressionism",
@@ -964,7 +964,7 @@
         "화음",
         "음정"
       ],
-      "difficulty": "어려움",
+      "difficulty": "매우 어려움",
       "category": "문화예술",
       "extraForbidden": [
         "harmony",
@@ -981,7 +981,7 @@
         "미생물",
         "산도"
       ],
-      "difficulty": "어려움",
+      "difficulty": "매우 어려움",
       "category": "음식",
       "extraForbidden": [
         "fermented food",
@@ -998,7 +998,7 @@
         "알긴산",
         "질감"
       ],
-      "difficulty": "어려움",
+      "difficulty": "매우 어려움",
       "category": "음식",
       "extraForbidden": [
         "molecular gastronomy",
@@ -1015,13 +1015,355 @@
         "본능",
         "사회행동"
       ],
-      "difficulty": "어려움",
+      "difficulty": "매우 어려움",
       "category": "동물",
       "extraForbidden": [
         "ethology",
         "imprinting",
         "instinct",
         "social behavior"
+      ]
+    },
+    {
+      "id": 61,
+      "topic": "사과",
+      "keywords": [
+        "과일",
+        "씨앗",
+        "껍질"
+      ],
+      "difficulty": "쉬움",
+      "category": "음식",
+      "extraForbidden": [
+        "apple",
+        "fruit",
+        "seed",
+        "peel"
+      ]
+    },
+    {
+      "id": 62,
+      "topic": "바나나",
+      "keywords": [
+        "노란색",
+        "원숭이",
+        "열대"
+      ],
+      "difficulty": "쉬움",
+      "category": "음식",
+      "extraForbidden": [
+        "banana",
+        "yellow",
+        "monkey",
+        "tropical"
+      ]
+    },
+    {
+      "id": 63,
+      "topic": "눈사람",
+      "keywords": [
+        "눈덩이",
+        "겨울",
+        "당근"
+      ],
+      "difficulty": "쉬움",
+      "category": "생활",
+      "extraForbidden": [
+        "snowman",
+        "snowball",
+        "winter",
+        "carrot"
+      ]
+    },
+    {
+      "id": 64,
+      "topic": "태양",
+      "keywords": [
+        "한낮",
+        "햇살",
+        "더위"
+      ],
+      "difficulty": "쉬움",
+      "category": "과학",
+      "extraForbidden": [
+        "sun",
+        "noon",
+        "sunshine",
+        "heat"
+      ]
+    },
+    {
+      "id": 65,
+      "topic": "개구리",
+      "keywords": [
+        "올챙이",
+        "연못",
+        "점프"
+      ],
+      "difficulty": "쉬움",
+      "category": "동물",
+      "extraForbidden": [
+        "frog",
+        "tadpole",
+        "pond",
+        "jump"
+      ]
+    },
+    {
+      "id": 66,
+      "topic": "토끼",
+      "keywords": [
+        "깡충깡충",
+        "긴귀",
+        "풀밭"
+      ],
+      "difficulty": "쉬움",
+      "category": "동물",
+      "extraForbidden": [
+        "rabbit",
+        "long ears",
+        "grass field"
+      ]
+    },
+    {
+      "id": 67,
+      "topic": "비누",
+      "keywords": [
+        "거품",
+        "세균",
+        "깨끗"
+      ],
+      "difficulty": "쉬움",
+      "category": "생활",
+      "extraForbidden": [
+        "soap",
+        "bubble",
+        "germ",
+        "clean"
+      ]
+    },
+    {
+      "id": 68,
+      "topic": "시계",
+      "keywords": [
+        "시침",
+        "분침",
+        "숫자"
+      ],
+      "difficulty": "쉬움",
+      "category": "생활",
+      "extraForbidden": [
+        "clock",
+        "hour hand",
+        "minute hand",
+        "number"
+      ]
+    },
+    {
+      "id": 69,
+      "topic": "칫솔",
+      "keywords": [
+        "치약",
+        "양치",
+        "충치"
+      ],
+      "difficulty": "쉬움",
+      "category": "생활",
+      "extraForbidden": [
+        "toothbrush",
+        "toothpaste",
+        "brushing",
+        "cavity"
+      ]
+    },
+    {
+      "id": 70,
+      "topic": "연필",
+      "keywords": [
+        "지우개",
+        "흑연",
+        "공책"
+      ],
+      "difficulty": "쉬움",
+      "category": "생활",
+      "extraForbidden": [
+        "pencil",
+        "eraser",
+        "graphite",
+        "notebook"
+      ]
+    },
+    {
+      "id": 71,
+      "topic": "오리",
+      "keywords": [
+        "부리",
+        "깃털",
+        "헤엄"
+      ],
+      "difficulty": "쉬움",
+      "category": "동물",
+      "extraForbidden": [
+        "duck",
+        "beak",
+        "feather",
+        "swim"
+      ]
+    },
+    {
+      "id": 72,
+      "topic": "사자",
+      "keywords": [
+        "갈기",
+        "포효",
+        "초원"
+      ],
+      "difficulty": "쉬움",
+      "category": "동물",
+      "extraForbidden": [
+        "lion",
+        "mane",
+        "roar",
+        "savanna"
+      ]
+    },
+    {
+      "id": 73,
+      "topic": "코끼리",
+      "keywords": [
+        "상아",
+        "아프리카",
+        "몸집"
+      ],
+      "difficulty": "쉬움",
+      "category": "동물",
+      "extraForbidden": [
+        "elephant",
+        "tusk",
+        "africa",
+        "body size"
+      ]
+    },
+    {
+      "id": 74,
+      "topic": "식빵",
+      "keywords": [
+        "밀가루",
+        "오븐",
+        "토스트"
+      ],
+      "difficulty": "쉬움",
+      "category": "음식",
+      "extraForbidden": [
+        "bread",
+        "flour",
+        "oven",
+        "toast"
+      ]
+    },
+    {
+      "id": 75,
+      "topic": "달걀",
+      "keywords": [
+        "노른자",
+        "흰자",
+        "껍데기"
+      ],
+      "difficulty": "쉬움",
+      "category": "음식",
+      "extraForbidden": [
+        "egg",
+        "yolk",
+        "egg white",
+        "shell",
+        "계란"
+      ]
+    },
+    {
+      "id": 76,
+      "topic": "수박",
+      "keywords": [
+        "여름",
+        "줄무늬",
+        "초록색"
+      ],
+      "difficulty": "쉬움",
+      "category": "음식",
+      "extraForbidden": [
+        "watermelon",
+        "summer",
+        "stripes",
+        "green"
+      ]
+    },
+    {
+      "id": 77,
+      "topic": "신호등",
+      "keywords": [
+        "빨간불",
+        "초록불",
+        "횡단보도"
+      ],
+      "difficulty": "쉬움",
+      "category": "생활",
+      "extraForbidden": [
+        "traffic light",
+        "red light",
+        "green light",
+        "crosswalk"
+      ]
+    },
+    {
+      "id": 78,
+      "topic": "별자리",
+      "keywords": [
+        "밤하늘",
+        "북두칠성",
+        "반짝"
+      ],
+      "difficulty": "쉬움",
+      "category": "과학",
+      "extraForbidden": [
+        "constellation",
+        "night sky",
+        "big dipper",
+        "twinkle",
+        "성좌"
+      ]
+    },
+    {
+      "id": 79,
+      "topic": "자동차",
+      "keywords": [
+        "운전",
+        "핸들",
+        "도로"
+      ],
+      "difficulty": "쉬움",
+      "category": "생활",
+      "extraForbidden": [
+        "car",
+        "driving",
+        "steering wheel",
+        "road",
+        "차량"
+      ]
+    },
+    {
+      "id": 80,
+      "topic": "수영",
+      "keywords": [
+        "물안경",
+        "배영",
+        "풀장"
+      ],
+      "difficulty": "쉬움",
+      "category": "생활",
+      "extraForbidden": [
+        "swimming",
+        "goggles",
+        "backstroke",
+        "pool"
       ]
     }
   ],
@@ -1072,9 +1414,12 @@
       "minKeywords": 1
     },
     "보통": {
-      "minKeywords": 2
+      "minKeywords": 1
     },
     "어려움": {
+      "minKeywords": 2
+    },
+    "매우 어려움": {
       "minKeywords": 3
     }
   }

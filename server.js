@@ -73,7 +73,7 @@ function cleanSettings(s = {}) {
   }
   return {
     title: String(s.title ?? '').trim().slice(0, 20) || '프롬프트 한 판!',
-    difficulty: pick(s.difficulty, ['easy', 'normal', 'hard'], 'normal'),
+    difficulty: pick(s.difficulty, ['easy', 'normal', 'hard', 'expert'], 'normal'),
     map: pick(s.map, MAPS, 'east'),
     timeLimit: pick(Number(s.timeLimit), [120, 180, 300], 180),
     promptLimit: pick(Number(s.promptLimit), [50, 100, 150, 300, 0], 100),

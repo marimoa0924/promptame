@@ -212,8 +212,9 @@ export function countSentences(text) {
 // 난이도별 필수어 최소 개수예요. problems.json의 difficultyRules가 있으면 그것을 써요.
 export const DEFAULT_DIFFICULTY_RULES = {
   쉬움: { minKeywords: 1 },
-  보통: { minKeywords: 2 },
-  어려움: { minKeywords: 3 },
+  보통: { minKeywords: 1 },
+  어려움: { minKeywords: 2 },
+  '매우 어려움': { minKeywords: 3 },
 };
 
 // lengthRule은 { type: 'chars' | 'sentences', value: 숫자 } 형태예요.

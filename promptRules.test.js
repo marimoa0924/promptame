@@ -72,15 +72,15 @@ test('프롬프트 글자 수 제한과 빈 입력', () => {
 });
 
 test('필수어 개수는 난이도에 따라 달라져요', () => {
-  const easy = byTopic('피자'); // 쉬움: 1개 이상
+  const easy = byTopic('피자'); // 보통: 1개 이상
   const len = { type: 'chars', value: 100 };
   assert.equal(checkAnswer('치즈가 올라가요.', easy, len).pass, true);
   assert.equal(checkAnswer('둥글고 맛있어요.', easy, len).pass, false);
-  // 보통: 2개 이상
+  // 어려움: 2개 이상
   assert.equal(checkAnswer('세포호흡을 해요.', mito, len).pass, false);
   assert.equal(checkAnswer('세포호흡으로 에너지를 만들어요.', mito, len).pass, true);
   assert.equal(checkAnswer('ATP와 세포 호흡', mito, len).pass, true); // 대소문자, 띄어쓰기 무시
-  // 어려움: 3개 모두
+  // 매우 어려움: 3개 모두
   assert.equal(checkAnswer('정규화와 테이블을 써요.', db, len).pass, false);
   assert.equal(checkAnswer('정규화와 테이블과 기본키를 써요.', db, len).pass, true);
 });
@@ -97,7 +97,7 @@ test('답변 분량 검사', () => {
 });
 
 test('출제는 같은 난이도에서 안 나온 문제를 먼저 뽑아요', () => {
-  const easyIds = data.problems.filter((p) => p.difficulty === '쉬움').map((p) => p.id);
+  const easyIds = data.problems.filter((p) => p.difficulty === '쉬움').map((p) => p.id); // 새로 넣은 정말 쉬운 20개
   const used = easyIds.slice(0, -1);
   const { problem, lengthRule } = drawQuestion(data, '쉬움', used);
   assert.equal(problem.id, easyIds.at(-1));
@@ -158,4 +158,21 @@ test('숫자 없이 짧게 해 달라는 말과 비슷하게 생긴 다른 말�
     assert.equal(findLengthSpec(p), null, p);
   }
   assert.equal(allowed('나는 교사야. 아이들 눈높이에 맞게 짧고 간결하게 설명해줘', mito), true);
+});
+
+test('난이도는 4단계이고 단계마다 문제가 20개, 필수어는 3개다', () => {
+  const names = ['쉬움', '보통', '어려움', '매우 어려움'];
+  assert.deepEqual(Object.keys(data.difficultyRules), names);
+  assert.deepEqual(names.map((n) => data.difficultyRules[n].minKeywords), [1, 1, 2, 3]);
+  for (const n of names) assert.equal(data.problems.filter((p) => p.difficulty === n).length, 20, n);
+  assert.ok(data.problems.every((p) => p.keywords.length === 3));
+  assert.equal(data.problems.length, 80);
+});
+
+test('쉬움 문제는 일상적인 낱말이고 필수어를 하나만 담아도 통과한다', () => {
+  const apple = byTopic('사과');
+  assert.equal(apple.difficulty, '쉬움');
+  assert.equal(checkAnswer('빨간 과일이에요.', apple, { type: 'chars', value: 50 }, data.difficultyRules).pass, true);
+  assert.equal(checkAnswer('맛있어요.', apple, { type: 'chars', value: 50 }, data.difficultyRules).pass, false);
+  assert.equal(blocked('계란 알려줘', byTopic('달걀')), true); // 같은 뜻의 다른 말도 막는다
 });

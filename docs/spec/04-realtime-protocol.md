@@ -23,7 +23,7 @@
 { name: "2문장 이내", type: "sentences", value: 2 }   // type: "chars" | "sentences"
 
 // Settings
-{ title: "우리방", difficulty: "쉬움"|"보통"|"어려움", durationSec: 120|180|300,
+{ title: "우리방", difficulty: "쉬움"|"보통"|"어려움"|"매우 어려움", durationSec: 120|180|300,
   promptLimit: 50|100|150|300|null, map: "eastern" }
 
 // Verdict: checkAnswer 결과에 truncated와 reasons를 더한 것

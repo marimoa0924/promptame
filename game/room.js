@@ -4,7 +4,8 @@ import { createMockAI, generateWithRetry } from './gemini.js';
 import { botPrompt, BOT_NAMES } from './bot.js';
 
 const DATA = JSON.parse(readFileSync(new URL('../problems.json', import.meta.url), 'utf8'));
-const DIFFICULTY_KO = { easy: '쉬움', normal: '보통', hard: '어려움' };
+// 난이도 4단계. 화면에서 보내는 값 -> problems.json의 난이도 이름
+const DIFFICULTY_KO = { easy: '쉬움', normal: '보통', hard: '어려움', expert: '매우 어려움' };
 const SEQUENCE_LENGTH = 40;
 const PROMPT_HARD_CAP = 2000; // 방 설정이 무제한이어도 서버는 이 이상 받지 않는다
 const REPLAY_TICK_MS = 40;
