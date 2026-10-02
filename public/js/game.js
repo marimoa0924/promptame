@@ -489,8 +489,8 @@ export class Game {
     const { r } = this.boards.me;
     const problem = this.me?.topic?.problem;
     const check = problem && r.input.value.trim() ? checkPrompt(r.input.value, problem, null) : { ok: true };
-    const hit = check.code === 'FORBIDDEN';
-    r.warn.textContent = hit ? `'${check.word}'은(는) 쓸 수 없어요!` : '';
+    const hit = check.code === 'FORBIDDEN' || check.code === 'LENGTH_SPEC';
+    r.warn.textContent = !hit ? '' : check.code === 'LENGTH_SPEC' ? `분량('${check.match}')은 말할 수 없어요!` : `'${check.word}'은(는) 쓸 수 없어요!`;
     r.form.classList.toggle('has-banned', hit);
   }
 

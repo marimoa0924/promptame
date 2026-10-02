@@ -39,8 +39,9 @@ function shuffle(list) {
 
 // 상태: waiting → countdown → playing → ended → (한번 더) countdown …
 export class Room {
-  constructor(io, code, settings, onClose, ai, timing = {}) {
+  constructor(io, code, settings, onClose, ai, timing = {}, hooks = {}) {
     this.io = io;
+    this.hooks = hooks; // { seen, ranking }. 없으면 해당 기능을 건너뛴다
     this.t = { ...DEFAULT_TIMING, ...timing };
     this.usedIds = []; // 이전 판에서 나온 문제 번호. 한 번 더 하기에서 겹치지 않게 한다.
     this.closing = false; // 시간이 끝났지만 이미 보낸 요청을 기다리는 중
@@ -81,7 +82,11 @@ export class Room {
   // 판 시작 때 문제 목록을 미리 뽑아 둔다. 두 사람이 같은 순서로 풀고, 각자 자기 속도로 넘어간다.
   pickSequence() {
     const difficulty = DIFFICULTY_KO[this.settings.difficulty] ?? '보통';
-    const list = drawSequence(DATA, difficulty, SEQUENCE_LENGTH, Math.random, this.usedIds);
+    // 이 방에서 이미 나온 문제와, 두 사람이 이전에 본 문제를 먼저 피해서 뽑는다
+    const pool = new Set(DATA.problems.filter((p) => p.difficulty === difficulty).map((p) => p.id));
+    const avoid = new Set(this.usedIds);
+    if (!this.settings.tutorial) for (const h of this.humans()) for (const id of this.hooks.seen?.ids(h.device) ?? []) avoid.add(id);
+    const list = drawSequence(DATA, difficulty, SEQUENCE_LENGTH, Math.random, [...avoid].filter((id) => pool.has(id)));
     if (this.settings.tutorial) {
       // 튜토리얼은 기획서 예시(광합성)로 시작
       const problem = DATA.problems.find((p) => p.topic === TUTORIAL_FIRST.topic);
@@ -151,6 +156,7 @@ export class Room {
       busy: false,
       frozenUntil: 0,
       frozenKind: null,
+      device: isBot ? null : (profile.device ?? null), // 랭킹과 본 문제 기록에 쓰는 기기 ID. 밖으로 보내지 않는다
       live: null,
     };
   }
@@ -240,6 +246,7 @@ export class Room {
 
   start() {
     const duration = this.settings.timeLimit * 1000;
+    this.sequence = this.pickSequence(); // 두 사람이 다 들어온 뒤에 뽑아야 두 사람이 본 문제를 피할 수 있다
     this.state = 'playing';
     this.closing = false;
     this.startedAt = Date.now();
@@ -427,8 +434,22 @@ export class Room {
       durationMs: this.startedAt ? endedAt - this.startedAt : 0,
       players: this.snapshot().players,
     };
+    this.recordHistory(reason, winnerId, leaverId, players);
     this.emit('game:end', this.lastResult);
     this.broadcast();
+  }
+
+  // 본 문제 기록과 랭킹을 남긴다. 튜토리얼과 연습봇 판은 랭킹에 넣지 않는다.
+  recordHistory(reason, winnerId, leaverId, players) {
+    if (this.settings.tutorial) return;
+    for (const p of players) {
+      if (p.device) this.hooks.seen?.add(p.device, this.sequence.slice(0, p.topicIdx + 1).map((x) => x.problem.id));
+    }
+    const humans = players.filter((p) => !p.isBot);
+    if (humans.length !== 2 || players.length !== 2 || !this.hooks.ranking) return;
+    const [a, b] = humans.map((p) => ({ id: p.id, device: p.device, name: p.name, char: p.char, score: p.score }));
+    const ranking = this.hooks.ranking.record({ reason, winnerId, leaverId, a, b });
+    if (ranking) this.lastResult.ranking = ranking;
   }
 
   // ---------- 한번 더 하기 ----------
@@ -536,6 +557,8 @@ function promptError(check) {
       return `${check.limit}자를 넘었어요`;
     case 'FORBIDDEN':
       return `'${check.word}'은(는) 직접 쓸 수 없어요!`;
+    case 'LENGTH_SPEC':
+      return `분량('${check.match}')은 직접 말할 수 없어요!`;
     default:
       return '보낼 수 없는 프롬프트예요';
   }

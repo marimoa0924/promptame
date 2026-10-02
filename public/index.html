@@ -21,6 +21,7 @@
       <h1>프롬프트 배틀</h1>
       <p class="tagline">말은 조리 있게, 근거는 명확하게! AI에게서 정답을 끌어내세요</p>
       <button class="btn btn-accent2" id="btn-tutorial">📘 처음이라면? 튜토리얼</button>
+      <button class="btn" id="btn-ranking">🏆 랭킹</button>
     </header>
 
     <div class="lobby-grid">
@@ -33,6 +34,7 @@
         </label>
         <div class="char-grid" id="char-grid"></div>
         <p class="char-picked" id="char-picked"></p>
+        <p class="my-rank" id="my-rank"></p>
       </article>
 
       <!-- 게임 시작 -->
@@ -202,6 +204,17 @@
         <button class="btn btn-danger" data-ref="yes">예</button>
         <button class="btn" data-ref="no">아니오</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 랭킹 -->
+  <div class="modal" id="modal-ranking" hidden>
+    <div class="modal-card ranking-card">
+      <h2 class="panel-title">랭킹</h2>
+      <p class="ranking-me" data-ref="me"></p>
+      <ol class="ranking-list" data-ref="list"></ol>
+      <p class="muted ranking-rules" data-ref="rules">승리 +25 · 무승부 +5 · 패배 -10 · 포기 -15 (상대 포기로 이기면 +12). PASS가 너무 적은 판과 같은 상대와 1시간에 5판 넘게 한 판은 반영되지 않아요. 이 브라우저(기기)를 기준으로 쌓여요.</p>
+      <div class="modal-actions"><button class="btn" data-ref="close">닫기</button></div>
     </div>
   </div>
 

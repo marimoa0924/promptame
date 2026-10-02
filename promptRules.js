@@ -155,8 +155,32 @@ export function countChars(text) {
   return Array.from(String(text).replace(/\r\n/g, '\n')).length;
 }
 
+// 분량을 직접 말하는 표현을 찾아요. 예: 50자 이내, 3문장으로, 세 줄, 한 줄 요약, in two sentences
+// 기획서에서 주제, 분량, 필수어는 프롬프트에 직접 쓸 수 없다고 했어요. '짧게', '간결하게'처럼 숫자가 없는 말은 괜찮아요.
+// 한자어 숫자 '이'는 '이 문장'(this sentence)과 겹쳐서, '일'은 '일 줄'처럼 거의 안 써서 뺐어요.
+const NATIVE_NUM = '(?:한|두|세|네|다섯|여섯|일곱|여덟|아홉|열|스무|스물|서른|마흔|쉰)';
+const SINO_NUM = '(?:[삼사오육칠팔구]?[십백]|[삼사오육칠팔구])';
+const KO_UNIT = '(?:글자|문장|줄(?!거리|기|넘김|무늬)|단어|문단|단락|페이지)';
+const LENGTH_SPEC_PATTERNS = [
+  // 숫자 + 단위. '자'는 10자리, 자료 같은 말과 겹치지 않을 때만
+  new RegExp(`\\d+\\s*(?:${KO_UNIT}|자(?!리|료|신|기|녀|유|동|랑|세|격|가))`),
+  // 한글 숫자 + 단위 (앞이 한글이면 '대한 줄거리'처럼 다른 낱말의 끝이라 제외)
+  new RegExp(`(?<![가-힣])(?:${NATIVE_NUM}|${SINO_NUM})\\s*${KO_UNIT}`),
+  new RegExp('\\b(?:\\d+|one|two|three|four|five|six|seven|eight|nine|ten)\\s*-?\\s*(?:characters?|chars?|letters?|words?|sentences?|lines?|paragraphs?)\\b'),
+];
+
+export function findLengthSpec(prompt) {
+  const text = foldCompat(prompt).toLowerCase();
+  for (const re of LENGTH_SPEC_PATTERNS) {
+    const m = text.match(re);
+    if (m) return m[0];
+  }
+  return null;
+}
+
 // promptLimit은 PROMPT_LIMITS 중 하나예요. null이면 길이 제한이 없어요.
-// 결과 code는 EMPTY, TOO_LONG, FORBIDDEN 중 하나이고, 통과하면 ok가 true예요.
+// 결과 code는 EMPTY, TOO_LONG, FORBIDDEN, LENGTH_SPEC 중 하나이고, 통과하면 ok가 true예요.
+// LENGTH_SPEC은 분량을 직접 요구한 경우이고 match에 걸린 표현이 담겨요.
 export function checkPrompt(prompt, problem, promptLimit = null) {
   const text = String(prompt ?? '');
   if (!text.trim()) return { ok: false, code: 'EMPTY' };
@@ -166,6 +190,8 @@ export function checkPrompt(prompt, problem, promptLimit = null) {
   }
   const hit = findForbidden(text, problem);
   if (hit) return { ok: false, code: 'FORBIDDEN', word: hit.word, kind: hit.kind };
+  const spec = findLengthSpec(text);
+  if (spec) return { ok: false, code: 'LENGTH_SPEC', match: spec };
   return { ok: true };
 }
 
