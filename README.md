@@ -10,10 +10,11 @@ npm run dev        # http://localhost:3000 (서버 파일 수정 시 자동 재�
 npm test           # 판정 규칙·AI 클라이언트 테스트
 ```
 
-AI는 `GEMINI_API_KEY`가 있으면 Gemini를, 없으면 목업을 쓴다.
+AI는 `GEMINI_API_KEY`가 있으면 Gemini를, 없으면 목업을 쓴다. 키는 프로젝트 폴더의 `.env` 파일에 넣는다 (git에 올라가지 않는다).
 
 ```bash
-GEMINI_API_KEY=... GEMINI_MODEL=gemini-2.5-flash-lite npm run dev
+cp .env.example .env     # 그다음 .env 를 열어 GEMINI_API_KEY= 뒤에 키를 붙여 넣기
+npm run dev              # 서버 첫 줄에 'AI: Gemini (모델명)'이 나오면 성공
 ```
 
 - **혼자 배틀 화면 보기**: 방 만들기 → 상대 칸의 **🤖 연습봇과 붙기**

@@ -1,4 +1,12 @@
 import express from 'express';
+
+// 프로젝트 폴더의 .env 파일이 있으면 환경변수로 읽는다 (GEMINI_API_KEY 등). 없으면 그냥 넘어간다.
+try {
+  process.loadEnvFile('.env');
+} catch {
+  /* .env 없음 */
+}
+
 import { createServer } from 'node:http';
 import { networkInterfaces } from 'node:os';
 import { fileURLToPath } from 'node:url';
