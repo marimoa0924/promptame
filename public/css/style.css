@@ -726,3 +726,10 @@ body.shake { animation: shake 0.12s steps(2) 5; }
 
 .google-origin { margin: 6px 0 0; text-align: center; max-width: 300px; }
 .login-google { flex-direction: column; align-items: center; }
+
+/* AI 선택, 솔로, 솔로 랭킹 */
+.chips button:disabled { opacity: 0.4; cursor: not-allowed; }
+.ranking-tabs { margin: 0 0 8px; }
+.ranking-solo-filter { display: grid; gap: 6px; margin-bottom: 8px; }
+.pf-out.solo { background: var(--accent-2, #888); color: var(--ink); }
+.pf-solo-best { margin: 2px 0; }

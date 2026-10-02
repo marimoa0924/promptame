@@ -81,7 +81,7 @@ export class Room {
   }
 
   get capacity() {
-    return this.settings.tutorial ? 1 : 2;
+    return this.settings.tutorial || this.settings.solo ? 1 : 2;
   }
 
   // 판 시작 때 문제 목록을 미리 뽑아 둔다. 두 사람이 같은 순서로 풀고, 각자 자기 속도로 넘어간다.
@@ -140,8 +140,10 @@ export class Room {
     return this.sequence[p.topicIdx % this.sequence.length];
   }
 
+  // 방 설정의 AI(Gemini, GPT, Claude)를 쓴다. 연습봇과 튜토리얼은 항상 목 AI다. 설정한 AI를 쓸 수 없으면 기본 AI로 돌아간다.
   aiFor(p) {
-    return p.isBot || this.settings.tutorial ? this.mock : this.ai;
+    if (p.isBot || this.settings.tutorial) return this.mock;
+    return this.hooks.providers?.[this.settings.ai] ?? this.ai;
   }
 
   newPlayer(id, profile, isBot = false) {
@@ -196,7 +198,7 @@ export class Room {
   }
 
   addBot() {
-    if (this.settings.tutorial || this.state !== 'waiting' || this.players.size !== 1) {
+    if (this.settings.tutorial || this.settings.solo || this.state !== 'waiting' || this.players.size !== 1) {
       return { ok: false, error: '지금은 연습봇을 부를 수 없어요' };
     }
     const id = `bot-${Math.random().toString(36).slice(2, 10)}`;
@@ -230,6 +232,9 @@ export class Room {
       this.countdownEndsAt = null;
       for (const other of this.players.values()) other.ready = false;
       this.scheduleWaitExpiry();
+    } else if (this.state === 'playing' && this.settings.solo) {
+      // 솔로 판을 중간에 나가면 기록하지 않고 방을 닫는다
+      this.clearTimers();
     } else if (this.state === 'playing') {
       const opp = this.opponentOf(playerId);
       // 두 사람이 모두 끊겨 있으면 누구의 잘못이라고 할 수 없다. 승패 없이 판을 무효로 한다.
@@ -448,7 +453,7 @@ export class Room {
     }
     if (winnerId === undefined) {
       const [a, b] = players;
-      if (!b) winnerId = a?.id ?? null;
+      if (!b) winnerId = this.settings.solo ? null : (a?.id ?? null); // 솔로는 이기고 지는 것이 없다
       else winnerId = a.score === b.score ? null : a.score > b.score ? a.id : b.id;
     }
     this.lastResult = {
@@ -456,6 +461,7 @@ export class Room {
       reason,
       winnerId,
       leaverId,
+      isSolo: !!this.settings.solo,
       durationMs: this.startedAt ? endedAt - this.startedAt : 0,
       players: this.snapshot().players,
       // 판이 끝났으니 두 사람이 보낸 프롬프트를 공개한다
@@ -471,6 +477,13 @@ export class Room {
     if (this.settings.tutorial) return;
     for (const p of players) {
       if (p.device) this.hooks.seen?.add(p.device, this.sequence.slice(0, p.topicIdx + 1).map((x) => x.problem.id));
+    }
+    if (this.settings.solo) {
+      // 솔로: 상대가 없으니 랭킹 대신 솔로 기록(개인 최고, 솔로 랭킹)을 남긴다
+      const p = players[0];
+      const r = p && this.hooks.accounts?.settleSolo({ accountId: p.device, name: p.name, reason, difficulty: DIFFICULTY_KO[this.settings.difficulty], timeLimit: this.settings.timeLimit, score: p.score, firstTry: p.firstTry, bestStreak: p.bestStreak, log: p.log });
+      if (r) this.lastResult.soloResult = r;
+      return;
     }
     const humans = players.filter((p) => !p.isBot);
     let ranking = null;

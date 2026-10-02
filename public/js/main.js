@@ -2,7 +2,7 @@ import { socket, session, request } from './net.js';
 import { $, showScreen, toast, confirmDialog } from './ui.js';
 import { initLobby } from './lobby.js';
 import { initRanking } from './ranking.js';
-import { startAuth, onAccount, setAccount, logout } from './auth.js';
+import { startAuth, onAccount, setAccount, logout, state as authState } from './auth.js';
 import { initProfile } from './profile.js';
 import { initShop } from './shop.js';
 import { Game } from './game.js';
@@ -165,4 +165,7 @@ try {
 }
 
 // 로그인부터 시작한다(저장된 토큰이 있으면 바로 로비로)
-startAuth(() => ranking.refresh());
+startAuth(() => {
+  ranking.refresh();
+  lobby.applyProviders(authState.providers, authState.defaultAi);
+});

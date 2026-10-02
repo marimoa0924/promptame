@@ -12,7 +12,8 @@ import { networkInterfaces } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { Server } from 'socket.io';
 import { Room } from './game/room.js';
-import { createAIFromEnv, listModels } from './game/gemini.js';
+import { listModels } from './game/gemini.js';
+import { createProviders, PROVIDERS } from './game/providers.js';
 import { createAccounts } from './game/accounts.js';
 import { verifyGoogleIdToken, GoogleAuthError, clientIdFromJson, checkClientId } from './game/googleAuth.js';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -25,7 +26,9 @@ const CHARACTERS = ['cat', 'pigeon', 'dog', 'otaku', 'miku', 'snake', 'engineer'
 const MAPS = ['east', 'future', 'medieval', 'space'];
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
-const ai = createAIFromEnv();
+// AI 제공자: 키가 있는 것(Gemini, GPT, Claude)만 방에서 고를 수 있다. 하나도 없으면 목 AI.
+const providers = createProviders();
+const ai = providers.default;
 // 랭킹과 본 문제 기록은 파일에 남긴다 (DATA_FILE로 위치 변경, 기본 ./store.json)
 const store = createJsonStore(process.env.DATA_FILE || './store.json');
 process.on('exit', () => store.flush());
@@ -59,7 +62,7 @@ const validDevice = (d) => (typeof d === 'string' && d.length >= 8 && d.length <
 const app = express();
 app.get('/favicon.ico', (_req, res) => res.status(204).end());
 // 화면이 구글 로그인 버튼을 그릴 때 쓰는 공개 설정(클라이언트 ID는 비밀이 아니다)
-app.get('/config.json', (_req, res) => res.json({ googleClientId: GOOGLE_CLIENT_ID }));
+app.get('/config.json', (_req, res) => res.json({ googleClientId: GOOGLE_CLIENT_ID, providers: providers.info(), defaultAi: providers.defaultKind }));
 app.use(express.static('public'));
 // 금지어 검사 규칙은 서버와 같은 파일을 브라우저에서도 쓴다
 for (const file of ['promptRules.js', 'nickname.js']) {
@@ -131,6 +134,8 @@ function cleanSettings(s = {}) {
   return {
     title: ((t) => (t.length >= 2 ? t : '프롬프트 한 판!'))(String(s.title ?? '').trim().slice(0, 20)), // 2~20자
     difficulty: pick(s.difficulty, ['easy', 'normal', 'hard', 'expert'], 'normal'),
+    ai: pick(s.ai, Object.keys(providers.available), providers.defaultKind), // 방의 두 사람이 같은 AI를 쓴다
+    solo: s.solo === true,
     map: pick(s.map, MAPS, 'east'),
     timeLimit: pick(Number(s.timeLimit), [120, 180, 300], 180),
     promptLimit: pick(Number(s.promptLimit), [50, 100, 150, 300, 0], 100),
@@ -249,7 +254,7 @@ io.on('connection', (socket) => {
     currentRoom()?.leave(socket.data.playerId);
     if (rooms.size >= MAX_ROOMS) return reply(ack, { ok: false, error: '지금은 방을 더 만들 수 없어요. 잠시 후 다시 시도해 주세요' });
     const code = newCode();
-    const room = new Room(io, code, cleanSettings(settings), (c) => rooms.delete(c), ai, {}, { seen, ranking, accounts });
+    const room = new Room(io, code, cleanSettings(settings), (c) => rooms.delete(c), ai, {}, { seen, ranking, accounts, providers: providers.available });
     rooms.set(code, room);
     reply(ack, room.join(socket, playerId, profileOf(acc)));
   });
@@ -284,6 +289,13 @@ io.on('connection', (socket) => {
     const room = currentRoom();
     if (!room) return reply(ack, { ok: false, error: '방에 들어가 있지 않아요' });
     reply(ack, room.addBot());
+  });
+
+  // 솔로 랭킹: 난이도와 제한시간별 최고 기록
+  socket.on('ranking:solo', ({ difficulty, timeLimit } = {}, ack) => {
+    const d = { easy: '쉬움', normal: '보통', hard: '어려움', expert: '매우 어려움' }[difficulty] ?? '보통';
+    const t = pick(Number(timeLimit), [120, 180, 300], 180);
+    reply(ack, { ok: true, difficulty: d, timeLimit: t, top: accounts.soloBoard(d, t, 10) });
   });
 
   // 랭킹 상위 목록과 내 순위
@@ -326,21 +338,27 @@ async function googleSelfTest() {
   else console.log(`  (구글 클라이언트 ID 확인은 못 했어요: ${r.detail})`);
 }
 
+// 키가 있는 AI 제공자마다 서버를 켤 때 한 번 호출해서 연결이 되는지 알려 준다
+async function providerSelfTest(id, client) {
+  const label = PROVIDERS[id].label;
+  const r = await client.generate('안녕이라고만 답해 줘');
+  if (r.status === 'OK') {
+    console.log(`  ✅ ${label} 연결 확인 (${r.latencyMs}ms): ${r.text.slice(0, 30)}`);
+    if (r.usage) console.log(`     토큰: 입력 ${r.usage.inTokens}, 출력 ${r.usage.outTokens}, 생각 ${r.usage.thinkTokens}${r.usage.thinkTokens > 0 ? ' ← 생각 기능이 켜져 있어요' : ''}`);
+    return;
+  }
+  const { keyEnv, modelEnv } = PROVIDERS[id];
+  console.log(`  ❌ ${label} 호출 실패: ${r.status} ${r.finishReason ?? ''} ${r.detail ?? ''}\n     → 키(${keyEnv})와 모델 이름(${modelEnv})을 확인하세요`);
+  if (r.finishReason === 'HTTP_404' || r.finishReason === 'HTTP_400') {
+    const names = id === 'gemini' ? (await listModels(process.env.GEMINI_API_KEY)).filter((n) => n.includes('gemini')) : await client.listModels?.();
+    if (names?.length) console.log(`     → 이 키로 쓸 수 있는 모델: ${names.slice(0, 12).join(', ')}\n     → .env 의 ${modelEnv}= 뒤에 위 이름 중 하나를 적고 서버를 다시 켜세요`);
+  }
+}
+
 async function selfTest() {
   googleSelfTest();
-  if (ai.kind !== 'gemini' || process.env.AI_SELFTEST === '0') return;
-  const r = await ai.generate('안녕이라고만 답해 줘');
-  if (r.status === 'OK') {
-    console.log(`  ✅ Gemini 연결 확인 (${r.latencyMs}ms): ${r.text.slice(0, 30)}`);
-    if (r.usage) console.log(`     토큰: 입력 ${r.usage.inTokens}, 출력 ${r.usage.outTokens}, 생각 ${r.usage.thinkTokens}${r.usage.thinkTokens > 0 ? ' ← 생각 기능이 켜져 있어요' : ''}`);
-  }
-  else console.log(`  ❌ Gemini 호출 실패: ${r.status} ${r.finishReason ?? ''} ${r.detail ?? ''}\n     → 키(GEMINI_API_KEY)와 모델 이름(GEMINI_MODEL)을 확인하세요`);
-  if (r.finishReason === 'HTTP_404') {
-    const names = (await listModels(process.env.GEMINI_API_KEY)).filter((n) => n.includes('gemini'));
-    console.log(names.length
-      ? `     → 이 키로 쓸 수 있는 모델: ${names.slice(0, 12).join(', ')}\n     → .env 의 GEMINI_MODEL= 뒤에 위 이름 중 하나(예: ${names.find((n) => n.includes('flash')) ?? names[0]})를 적고 서버를 다시 켜세요`
-      : '     → 모델 목록도 가져오지 못했어요. 키가 맞는지 확인하세요');
-  }
+  if (process.env.AI_SELFTEST === '0') return;
+  for (const [id, client] of Object.entries(providers.available)) providerSelfTest(id, client);
 }
 
 httpServer.listen(PORT, '0.0.0.0', () => {
@@ -348,7 +366,8 @@ httpServer.listen(PORT, '0.0.0.0', () => {
   if (!GOOGLE_CLIENT_ID) console.log('  구글 로그인: 꺼짐 (GOOGLE_CLIENT_ID 없음, 게스트 로그인만 가능)');
   else if (googleIdLooksValid) console.log(`  구글 로그인: 켜짐 (${GOOGLE_CLIENT_ID.slice(0, 14)}…)${googleFileNote ? ` ${googleFileNote}` : ''}`);
   else console.log(`  ⚠ 구글 로그인: GOOGLE_CLIENT_ID 모양이 이상해요 (${GOOGLE_CLIENT_ID.slice(0, 20)}…). '숫자-문자.apps.googleusercontent.com' 형태여야 해요. 클라이언트 보안 비밀번호(GOCSPX-…)나 프로젝트 ID를 넣은 건 아닌지 확인하세요`);
-  console.log(`  AI: ${ai.kind === 'gemini' ? `Gemini (${ai.model})` : '목업 (GEMINI_API_KEY 없음)'}`);
+  const on = Object.entries(providers.available).map(([id, c]) => `${PROVIDERS[id].label}(${c.model})`);
+  console.log(on.length ? `  AI: ${on.join(', ')} · 기본 ${PROVIDERS[providers.defaultKind].label}` : '  AI: 목업 (GEMINI_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY 중 하나도 없음)');
   console.log(`  ➜ 로컬:  http://localhost:${PORT}`);
   for (const nets of Object.values(networkInterfaces())) {
     for (const net of nets ?? []) {
