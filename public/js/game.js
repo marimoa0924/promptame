@@ -503,7 +503,7 @@ export class Game {
 
     const me = this.me;
     const frozen = !!me && me.frozenUntil > this.now();
-    const playing = this.room?.state === 'playing';
+    const playing = this.room?.state === 'playing' && this.now() < this.room.endsAt; // 시간이 끝나면 새로 보낼 수 없다
     r.input.disabled = !playing || frozen;
     r.send.disabled = !playing || !me || me.busy || frozen;
     r.skip.disabled = r.send.disabled || !!this.room?.settings.tutorial;
@@ -605,6 +605,12 @@ export class Game {
     // 얼음이 풀리는 순간 입력창 다시 열기
     const frozen = !!this.me && this.me.frozenUntil > now;
     if (frozen !== this.frozenShown) this.updateForm();
+    // 시간이 끝나는 순간 입력창 닫기
+    const over = room.state === 'playing' && now >= room.endsAt;
+    if (over !== this.overShown) {
+      this.overShown = over;
+      this.updateForm();
+    }
   }
 
   setBigText(wrap, text) {

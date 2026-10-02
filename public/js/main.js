@@ -81,6 +81,13 @@ socket.on('room:state', (room) => {
   }
 });
 
+// 대기방이 오래 비어 있어서 닫혔다
+socket.on('room:closed', () => {
+  if (!session.room) return;
+  toast('대기방이 닫혔어요. 다시 만들어 주세요', 'error');
+  toLobby();
+});
+
 socket.on('game:end', (result) => {
   if (result.code !== session.room) return;
   coach.stop();

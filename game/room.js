@@ -11,14 +11,18 @@ const REPLAY_TICK_MS = 40;
 const REPLAY_MAX_TICKS = 75; // 답변 재생은 아무리 길어도 약 3초
 const JUDGE_MAX_MS = 4500;
 
-const COUNTDOWN_MS = 3500;
+const DEFAULT_TIMING = {
+  countdownMs: 3500,
+  replayTickMs: REPLAY_TICK_MS,
+  judgeBaseMs: 900, // 평가 AI가 답변을 "읽는" 시간. 너무 빨리 채점되면 사용자가 결과를 읽을 틈이 없다.
+  judgePerLineMs: 750,
+  endGraceMs: 8000, // 시간이 끝났을 때 이미 보낸 요청을 기다려 주는 시간
+  waitTtlMs: 600_000, // 대기방은 10분 안에 상대가 안 오면 닫는다
+};
 const RECONNECT_GRACE_MS = 20_000;
 const FREEZE_MS = 5000;
 const SKIP_PAUSE_MS = 3000; // 건너뛰면 내 입력이 잠깐 멈춘다 (분량만 골라 뽑는 것을 막는다)
 const STREAK_FOR_FREEZE = 3;
-// 평가 AI가 답변을 "읽는" 시간. 너무 빨리 채점되면 사용자가 결과를 읽을 틈이 없다.
-const JUDGE_BASE_MS = 900;
-const JUDGE_PER_LINE_MS = 750;
 const BOT_CHARS = ['cat', 'pigeon', 'dog', 'otaku'];
 const TUTORIAL_FIRST = { topic: '광합성', lengthRule: { name: '3문장 이내', type: 'sentences', value: 3 } };
 
@@ -35,8 +39,11 @@ function shuffle(list) {
 
 // 상태: waiting → countdown → playing → ended → (한번 더) countdown …
 export class Room {
-  constructor(io, code, settings, onClose, ai) {
+  constructor(io, code, settings, onClose, ai, timing = {}) {
     this.io = io;
+    this.t = { ...DEFAULT_TIMING, ...timing };
+    this.usedIds = []; // 이전 판에서 나온 문제 번호. 한 번 더 하기에서 겹치지 않게 한다.
+    this.closing = false; // 시간이 끝났지만 이미 보낸 요청을 기다리는 중
     this.ai = ai;
     this.mock = createMockAI();
     this.code = code;
@@ -52,6 +59,19 @@ export class Room {
     this.lastResult = null;
     this.timers = new Set();
     this.closed = false;
+    this.scheduleWaitExpiry();
+  }
+
+  // 상대가 안 들어온 대기방은 오래 두지 않는다
+  scheduleWaitExpiry() {
+    clearTimeout(this.waitTimer);
+    this.waitTimer = setTimeout(() => {
+      if (this.state === 'waiting' && !this.closed) {
+        this.emit('room:closed', { reason: 'expired' });
+        this.close();
+      }
+    }, this.t.waitTtlMs);
+    this.waitTimer.unref?.(); // 이 타이머만으로 프로세스가 살아 있지 않게 한다
   }
 
   get capacity() {
@@ -61,7 +81,7 @@ export class Room {
   // 판 시작 때 문제 목록을 미리 뽑아 둔다. 두 사람이 같은 순서로 풀고, 각자 자기 속도로 넘어간다.
   pickSequence() {
     const difficulty = DIFFICULTY_KO[this.settings.difficulty] ?? '보통';
-    const list = drawSequence(DATA, difficulty, SEQUENCE_LENGTH);
+    const list = drawSequence(DATA, difficulty, SEQUENCE_LENGTH, Math.random, this.usedIds);
     if (this.settings.tutorial) {
       // 튜토리얼은 기획서 예시(광합성)로 시작
       const problem = DATA.problems.find((p) => p.topic === TUTORIAL_FIRST.topic);
@@ -194,6 +214,7 @@ export class Room {
       this.state = 'waiting';
       this.countdownEndsAt = null;
       for (const other of this.players.values()) other.ready = false;
+      this.scheduleWaitExpiry();
     } else if (this.state === 'playing') {
       this.end('forfeit', this.opponentOf(playerId)?.id ?? null, playerId);
     }
@@ -211,25 +232,41 @@ export class Room {
 
   startCountdown() {
     this.state = 'countdown';
-    this.countdownEndsAt = Date.now() + COUNTDOWN_MS;
+    clearTimeout(this.waitTimer);
+    this.countdownEndsAt = Date.now() + this.t.countdownMs;
     this.broadcast();
-    this.later(() => this.start(), COUNTDOWN_MS);
+    this.later(() => this.start(), this.t.countdownMs);
   }
 
   start() {
     const duration = this.settings.timeLimit * 1000;
     this.state = 'playing';
+    this.closing = false;
     this.startedAt = Date.now();
     this.endsAt = this.startedAt + duration;
     this.broadcast();
-    this.later(() => this.end('timeup'), duration);
+    this.later(() => this.timeUp(), duration);
     for (const p of this.players.values()) if (p.isBot) this.scheduleBot(p, 2500 + Math.random() * 2500);
+  }
+
+  // 시간이 끝났다. 이미 보낸 요청이 있으면 결과를 최대 endGraceMs까지 기다린다. 새 전송은 받지 않는다.
+  timeUp() {
+    this.closing = true;
+    if (![...this.players.values()].some((p) => p.busy)) return this.end('timeup');
+    this.later(() => this.end('timeup'), this.t.endGraceMs);
+    this.broadcast();
+  }
+
+  // 유예 중이던 요청이 모두 끝났으면 바로 종료한다
+  finishIfDrained() {
+    if (this.closing && this.state === 'playing' && ![...this.players.values()].some((p) => p.busy)) this.end('timeup');
   }
 
   submit(playerId, raw) {
     const p = this.players.get(playerId);
     if (!p) return { ok: false, error: '플레이어를 찾을 수 없어요' };
     if (this.state !== 'playing') return { ok: false, error: '아직 게임 중이 아니에요' };
+    if (this.closing || Date.now() >= this.endsAt) return { ok: false, error: '시간이 끝났어요' };
     if (p.busy) return { ok: false, error: 'AI가 아직 답변 중이에요' };
     if (Date.now() < p.frozenUntil) return { ok: false, error: '얼어붙어서 입력할 수 없어요!' };
 
@@ -262,6 +299,7 @@ export class Room {
     if (!p) return { ok: false, error: '플레이어를 찾을 수 없어요' };
     if (this.settings.tutorial) return { ok: false, error: '튜토리얼에서는 건너뛸 수 없어요' };
     if (this.state !== 'playing') return { ok: false, error: '아직 게임 중이 아니에요' };
+    if (this.closing || Date.now() >= this.endsAt) return { ok: false, error: '시간이 끝났어요' };
     if (p.busy) return { ok: false, error: 'AI가 답변 중일 때는 건너뛸 수 없어요' };
     if (Date.now() < p.frozenUntil) return { ok: false, error: '지금은 입력할 수 없어요' };
     p.topicIdx += 1;
@@ -290,6 +328,7 @@ export class Room {
       p.live = null;
       this.emitTo(p, 'ai:void', { playerId: p.id, message: 'AI가 답하지 못했어요. 다시 보내 주세요' });
       this.broadcast();
+      this.finishIfDrained();
       return;
     }
 
@@ -301,13 +340,13 @@ export class Room {
       if (!alive()) return;
       p.live.text += chunk;
       this.emit('ai:chunk', { playerId: p.id, chunk });
-      await sleep(REPLAY_TICK_MS);
+      await sleep(this.t.replayTickMs);
     }
     if (!alive()) return;
 
     // 평가 AI가 답변을 줄마다 읽는 시간
     const lines = answer.split('\n').filter((l) => l.trim()).length;
-    const durationMs = Math.min(JUDGE_MAX_MS, JUDGE_BASE_MS + lines * JUDGE_PER_LINE_MS);
+    const durationMs = Math.min(JUDGE_MAX_MS, this.t.judgeBaseMs + lines * this.t.judgePerLineMs);
     p.live.phase = 'judge';
     this.emit('ai:judge', { playerId: p.id, durationMs });
     await sleep(durationMs);
@@ -336,6 +375,7 @@ export class Room {
     p.busy = false;
     this.emit('ai:result', { playerId: p.id, ...result, verdict });
     this.broadcast();
+    this.finishIfDrained();
 
     if (p.isBot) this.scheduleBot(p, 2500 + Math.random() * 3500);
   }
@@ -364,6 +404,7 @@ export class Room {
 
   end(reason, winnerId, leaverId = null) {
     if (this.state !== 'countdown' && this.state !== 'playing') return;
+    this.closing = false;
     this.round += 1; // 진행 중이던 AI 답변 중단
     this.clearTimers();
     this.state = 'ended';
@@ -406,6 +447,9 @@ export class Room {
     const all = [...this.players.values()];
     if (!all.every((p) => p.ready)) return;
     // 같은 방 설정으로 초기화
+    // 이번 판에서 본 문제는 다음 판에서 먼저 피한다
+    const reached = Math.max(0, ...all.map((p) => p.topicIdx)) + 1;
+    for (const item of this.sequence.slice(0, reached)) this.usedIds.push(item.problem.id);
     this.sequence = this.pickSequence();
     this.startedAt = this.endsAt = null;
     for (const p of all) {
@@ -416,12 +460,14 @@ export class Room {
     } else {
       // 상대가 나갔으면 같은 방 코드로 새 상대를 기다린다
       this.state = 'waiting';
+      this.scheduleWaitExpiry();
     }
   }
 
   close() {
     if (this.closed) return;
     this.closed = true;
+    clearTimeout(this.waitTimer);
     this.clearTimers();
     for (const p of this.players.values()) clearTimeout(p.dropTimer);
     this.io.in(this.code).socketsLeave(this.code);
