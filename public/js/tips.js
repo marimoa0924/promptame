@@ -108,11 +108,12 @@ export function initTips() {
 
   function render() {
     const s = SLIDES[i];
+    r.step.textContent = `${i + 1} / ${SLIDES.length}`;
     r.title.textContent = `${s.icon} ${s.title}`;
     r.say.textContent = s.say;
     r.example.replaceChildren();
     if (s.good) {
-      for (const [cls, label, text] of [['good', '✅ 이렇게', s.good], ['bad', '❌ 이렇게는 아쉬워요', s.bad]]) {
+      for (const [cls, label, text] of [['good', '✅ 이렇게 써 보세요', s.good], ['bad', '❌ 이런 건 아쉬워요', s.bad]]) {
         const row = Object.assign(document.createElement('div'), { className: `tip-ex ${cls}` });
         const b = Object.assign(document.createElement('b'), { textContent: label });
         const p = Object.assign(document.createElement('p'), { textContent: text });
@@ -120,12 +121,13 @@ export function initTips() {
         r.example.append(row);
       }
     }
-    r.note.textContent = s.note ?? s.tip ?? '';
+    const note = s.note ?? s.tip ?? '';
+    r.note.textContent = note ? `💡 ${note}` : '';
     r.mine.textContent = mine(s);
     r.mine.hidden = !r.mine.textContent;
     r.prev.disabled = i === 0;
     r.next.textContent = i === SLIDES.length - 1 ? '끝!' : '다음 ▶';
-    r.dots.replaceChildren(...SLIDES.map((_, n) => Object.assign(document.createElement('span'), { className: n === i ? 'on' : '' })));
+    r.dots.replaceChildren(...SLIDES.map((sl, n) => Object.assign(document.createElement('button'), { type: 'button', className: n === i ? 'on' : '', title: sl.title, onclick: () => { i = n; render(); } })));
     r.pigeon.classList.remove('hop');
     void r.pigeon.offsetWidth;
     r.pigeon.classList.add('hop');
