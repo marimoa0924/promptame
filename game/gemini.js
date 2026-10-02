@@ -11,12 +11,13 @@ export const AI_TIMEOUT_MS = 8000;
 export const AI_RETRY_MAX = 2;
 const RETRY_WAIT_MS = 500;
 const MAX_OUTPUT_TOKENS = 1024; // 가장 긴 분량(300자)보다 넉넉하게
+export const DEFAULT_MODEL = 'gemini-3.5-flash-lite';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export function createGemini({
   apiKey,
-  model = 'gemini-2.5-flash-lite',
+  model = DEFAULT_MODEL,
   // 생각 기능을 끈다. 이 설정을 받지 않는 모델이면 빈 문자열로 두면 필드를 보내지 않는다.
   thinkingBudget = 0,
   timeoutMs = AI_TIMEOUT_MS,
@@ -24,6 +25,7 @@ export function createGemini({
 } = {}) {
   if (!apiKey) throw new Error('GEMINI_API_KEY가 없어요');
   model = String(model).trim().replace(/^models\//, ''); // 'models/gemini-...'로 적어도 된다
+  let useThinking = thinkingBudget !== '' && thinkingBudget != null; // 모델이 이 설정을 거부하면 빼고 다시 시도한다
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
   return {
@@ -41,24 +43,36 @@ export function createGemini({
         ...extra,
       });
 
-      const generationConfig = { maxOutputTokens: MAX_OUTPUT_TOKENS };
-      if (thinkingBudget !== '' && thinkingBudget != null) generationConfig.thinkingConfig = { thinkingBudget };
-
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), timeoutMs);
       const onAbort = () => ctrl.abort();
       signal?.addEventListener('abort', onAbort, { once: true });
       try {
-        const res = await fetchImpl(url, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
-          body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig }),
-          signal: ctrl.signal,
-        });
+        const call = () => {
+          const generationConfig = { maxOutputTokens: MAX_OUTPUT_TOKENS };
+          if (useThinking) generationConfig.thinkingConfig = { thinkingBudget };
+          return fetchImpl(url, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
+            body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig }),
+            signal: ctrl.signal,
+          });
+        };
+        let res = await call();
+        let errBody = null;
+        if (!res.ok) {
+          errBody = await res.json().catch(() => null);
+          // 생각 기능 설정을 받지 않는 모델이면 그 설정만 빼고 한 번 더 보낸다
+          if (res.status === 400 && useThinking && /think/i.test(errBody?.error?.message ?? '')) {
+            useThinking = false;
+            console.warn('[ai] 이 모델은 thinkingBudget 설정을 받지 않아 빼고 호출해요');
+            res = await call();
+            errBody = res.ok ? null : await res.json().catch(() => null);
+          }
+        }
         if (!res.ok) {
           // 원인을 알 수 있게 Gemini가 돌려준 오류 문장을 남긴다 (키 문제, 모델 이름 오류 등)
-          const body = await res.json().catch(() => null);
-          return done('ERROR', { finishReason: `HTTP_${res.status}`, detail: body?.error?.message ?? null });
+          return done('ERROR', { finishReason: `HTTP_${res.status}`, detail: errBody?.error?.message ?? null });
         }
         const data = await res.json();
 

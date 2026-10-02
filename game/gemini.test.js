@@ -86,3 +86,20 @@ test('모델 이름 앞의 models/ 는 떼고, 목록에서는 generateContent �
   const list = await listModels('k', reply({ models: [{ name: 'models/a', supportedGenerationMethods: ['generateContent'] }, { name: 'models/b', supportedGenerationMethods: ['embedContent'] }] }));
   assert.deepEqual(list, ['a']);
 });
+
+test('생각 기능 설정을 거부하는 모델이면 그 설정만 빼고 다시 보낸다', async () => {
+  const bodies = [];
+  const ai = createGemini({
+    apiKey: 'k',
+    fetchImpl: async (u, init) => {
+      const b = JSON.parse(init.body);
+      bodies.push(b);
+      if (b.generationConfig.thinkingConfig) return { ok: false, status: 400, json: async () => ({ error: { message: 'thinking_budget is not supported' } }) };
+      return { ok: true, status: 200, json: async () => ({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: '답' }] } }] }) };
+    },
+  });
+  assert.equal((await ai.generate('x')).status, 'OK');
+  assert.equal(bodies.length, 2);
+  await ai.generate('y');
+  assert.equal(bodies.length, 3); // 한 번 알게 된 뒤에는 처음부터 빼고 보낸다
+});

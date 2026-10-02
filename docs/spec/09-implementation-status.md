@@ -23,7 +23,7 @@ main에 올라온 UI와 서버(Express, Socket.IO)를 확인하고, 판정 모�
 | 키가 없을 때 | 목 AI로 돌아간다. 연습봇과 튜토리얼도 항상 목 AI를 쓴다 |
 | 규칙 파일 | `checkAnswer`에 `opts.truncated`와 `reasons`를 추가하고, `drawSequence`를 추가했다. 기존 동작은 그대로다 |
 
-실행: `npm install`, `GEMINI_API_KEY=... npm run dev`. 환경변수는 `GEMINI_API_KEY`, `GEMINI_MODEL`(기본 `gemini-2.5-flash-lite`로 넣었지만 쓸 수 있는 모델인지 확인하지 못했다), `GEMINI_THINKING_BUDGET`(기본 0, 빈 값이면 필드를 보내지 않음)이다.
+실행: `npm install`, `GEMINI_API_KEY=... npm run dev`. 환경변수는 `GEMINI_API_KEY`, `GEMINI_MODEL`(기본 `gemini-3.5-flash-lite`로 넣었지만 쓸 수 있는 모델인지 확인하지 못했다), `GEMINI_THINKING_BUDGET`(기본 0, 빈 값이면 필드를 보내지 않음)이다.
 
 ## 3. 확정 사항에 맞게 고친 것
 
