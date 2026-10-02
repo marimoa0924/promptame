@@ -284,7 +284,7 @@ export class Room {
     if (!alive()) return;
     if (gen.status !== 'OK') {
       // AI가 끝내 답하지 못했다. 시도로 세지 않고 다시 보낼 수 있게 한다.
-      console.warn(`[ai] void: ${gen.status} ${gen.finishReason ?? ''}`);
+      console.warn(`[ai] 답변 실패: ${gen.status} ${gen.finishReason ?? ''} ${gen.detail ?? ''}`);
       p.busy = false;
       p.attempts = Math.max(0, p.attempts - 1);
       p.live = null;

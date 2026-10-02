@@ -3,7 +3,7 @@
 //
 // generate(prompt, { signal, problem, lengthRule }) -> {
 //   status: 'OK' | 'EMPTY' | 'BLOCKED' | 'ERROR',
-//   text, truncated, finishReason, latencyMs, usage: { inTokens, outTokens } | null
+//   text, truncated, finishReason, latencyMs, usage: { inTokens, outTokens } | null, detail(실패 원인 문장)
 // }
 // problem과 lengthRule은 목이 답변을 꾸밀 때만 쓰고, 실제 호출에는 전혀 보내지 않는다.
 
@@ -54,7 +54,11 @@ export function createGemini({
           body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig }),
           signal: ctrl.signal,
         });
-        if (!res.ok) return done('ERROR', { finishReason: `HTTP_${res.status}` });
+        if (!res.ok) {
+          // 원인을 알 수 있게 Gemini가 돌려준 오류 문장을 남긴다 (키 문제, 모델 이름 오류 등)
+          const body = await res.json().catch(() => null);
+          return done('ERROR', { finishReason: `HTTP_${res.status}`, detail: body?.error?.message ?? null });
+        }
         const data = await res.json();
 
         const usage = data.usageMetadata
@@ -72,7 +76,7 @@ export function createGemini({
         }
         return done('OK', { text, truncated: finishReason === 'MAX_TOKENS', finishReason, usage });
       } catch (err) {
-        return done('ERROR', { finishReason: err?.name === 'AbortError' ? 'TIMEOUT' : 'FETCH_FAILED' });
+        return done('ERROR', { finishReason: err?.name === 'AbortError' ? 'TIMEOUT' : 'FETCH_FAILED', detail: err?.cause?.code ?? err?.message ?? null });
       } finally {
         clearTimeout(timer);
         signal?.removeEventListener('abort', onAbort);

@@ -23,6 +23,7 @@ const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 const ai = createAIFromEnv();
 const app = express();
+app.get('/favicon.ico', (_req, res) => res.status(204).end());
 app.use(express.static('public'));
 // 금지어 검사 규칙은 서버와 같은 파일을 브라우저에서도 쓴다
 for (const file of ['promptRules.js', 'nickname.js']) {
@@ -146,6 +147,14 @@ io.on('connection', (socket) => {
   });
 });
 
+// 키가 있으면 서버를 켤 때 한 번 호출해서 연결이 되는지 바로 알려 준다. 끄려면 AI_SELFTEST=0
+async function selfTest() {
+  if (ai.kind !== 'gemini' || process.env.AI_SELFTEST === '0') return;
+  const r = await ai.generate('안녕이라고만 답해 줘');
+  if (r.status === 'OK') console.log(`  ✅ Gemini 연결 확인 (${r.latencyMs}ms): ${r.text.slice(0, 30)}`);
+  else console.log(`  ❌ Gemini 호출 실패: ${r.status} ${r.finishReason ?? ''} ${r.detail ?? ''}\n     → 키(GEMINI_API_KEY)와 모델 이름(GEMINI_MODEL)을 확인하세요`);
+}
+
 httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`\n  🏮 프롬프트 배틀 서버 실행 중`);
   console.log(`  AI: ${ai.kind === 'gemini' ? `Gemini (${ai.model})` : '목업 (GEMINI_API_KEY 없음)'}`);
@@ -156,4 +165,5 @@ httpServer.listen(PORT, '0.0.0.0', () => {
     }
   }
   console.log('');
+  selfTest();
 });

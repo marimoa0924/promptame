@@ -40,6 +40,8 @@ test('안전 필터, 빈 응답, HTTP 오류를 구분한다', async () => {
   const err = await mk({}, false, 429).generate('x');
   assert.equal(err.status, 'ERROR');
   assert.equal(err.finishReason, 'HTTP_429');
+  const withMsg = await createGemini({ apiKey: 'k', fetchImpl: reply({ error: { message: 'API key not valid' } }, false, 400) }).generate('x');
+  assert.equal(withMsg.detail, 'API key not valid');
 });
 
 test('시간 초과는 ERROR(TIMEOUT)', async () => {
