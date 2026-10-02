@@ -1,8 +1,10 @@
 import express from 'express';
 import { createServer } from 'node:http';
 import { networkInterfaces } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { Server } from 'socket.io';
 import { Room } from './game/room.js';
+import { createAIFromEnv } from './game/gemini.js';
 
 const PORT = Number(process.env.PORT) || 3000;
 const CHARACTERS = ['cat', 'pigeon', 'dog', 'otaku'];
@@ -10,8 +12,11 @@ const EMOTES = ['😹', '👍', '🔥', '😭', '🫵', '🙏'];
 const MAPS = ['east', 'future', 'medieval', 'space'];
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
+const ai = createAIFromEnv();
 const app = express();
 app.use(express.static('public'));
+// 금지어 검사 규칙은 서버와 같은 파일을 브라우저에서도 쓴다
+app.get('/shared/promptRules.js', (_req, res) => res.sendFile(fileURLToPath(new URL("./promptRules.js", import.meta.url))));
 const httpServer = createServer(app);
 const io = new Server(httpServer);
 
@@ -20,7 +25,7 @@ const rooms = new Map();
 function newCode() {
   let code;
   do {
-    code = Array.from({ length: 5 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
+    code = Array.from({ length: 6 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
   } while (rooms.has(code));
   return code;
 }
@@ -34,7 +39,7 @@ function cleanProfile(profile = {}) {
 
 function cleanSettings(s = {}) {
   if (s.tutorial) {
-    return { title: '튜토리얼', difficulty: 'easy', map: pick(s.map, MAPS, 'east'), timeLimit: 300, promptLimit: 150, tutorial: true };
+    return { title: '튜토리얼', difficulty: 'normal', map: pick(s.map, MAPS, 'east'), timeLimit: 300, promptLimit: 150, tutorial: true };
   }
   return {
     title: String(s.title ?? '').trim().slice(0, 20) || '프롬프트 한 판!',
@@ -55,7 +60,7 @@ io.on('connection', (socket) => {
     if (!validId(playerId)) return reply(ack, { ok: false, error: '잘못된 요청이에요' });
     currentRoom()?.leave(socket.data.playerId);
     const code = newCode();
-    const room = new Room(io, code, cleanSettings(settings), (c) => rooms.delete(c));
+    const room = new Room(io, code, cleanSettings(settings), (c) => rooms.delete(c), ai);
     rooms.set(code, room);
     reply(ack, room.join(socket, playerId, cleanProfile(profile)));
   });
@@ -87,15 +92,6 @@ io.on('connection', (socket) => {
     reply(ack, room.addBot());
   });
 
-  socket.on('player:chat', ({ text } = {}) => {
-    const code = socket.data.roomCode;
-    const clean = String(text ?? '').trim().slice(0, 30);
-    const now = Date.now();
-    if (!code || !clean || now - (socket.data.lastChat ?? 0) < 700) return;
-    socket.data.lastChat = now;
-    socket.to(code).emit('player:chat', { playerId: socket.data.playerId, text: clean });
-  });
-
   socket.on('prompt:submit', ({ text } = {}, ack) => {
     const room = currentRoom();
     if (!room) return reply(ack, { ok: false, error: '방에 들어가 있지 않아요' });
@@ -123,6 +119,7 @@ io.on('connection', (socket) => {
 
 httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`\n  🏮 프롬프트 배틀 서버 실행 중`);
+  console.log(`  AI: ${ai.kind === 'gemini' ? `Gemini (${ai.model})` : '목업 (GEMINI_API_KEY 없음)'}`);
   console.log(`  ➜ 로컬:  http://localhost:${PORT}`);
   for (const nets of Object.values(networkInterfaces())) {
     for (const net of nets ?? []) {

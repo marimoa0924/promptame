@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {
-  checkPrompt, checkAnswer, countSentences, countChars, composeJamo, drawQuestion,
+  checkPrompt, checkAnswer, countSentences, countChars, composeJamo, drawQuestion, drawSequence,
 } from './promptRules.js';
 
 const data = JSON.parse(fs.readFileSync(new URL('./problems.json', import.meta.url), 'utf8'));
@@ -110,4 +110,31 @@ test('모든 문제의 주제어와 필수어는 스스로 막혀요', () => {
     for (const k of p.keywords) assert.ok(blocked(k, p), `${p.topic}의 ${k}가 안 막혀요`);
     for (const e of p.extraForbidden) assert.ok(blocked(e, p), `${p.topic}의 ${e}가 안 막혀요`);
   }
+});
+
+test('답변이 잘렸으면 분량 초과로 실패해요', () => {
+  const easy = byTopic('피자');
+  const len = { type: 'chars', value: 100 };
+  const ok = checkAnswer('치즈가 올라가요.', easy, len);
+  assert.equal(ok.pass, true);
+  assert.deepEqual(ok.reasons, []);
+  const cut = checkAnswer('치즈가 올라가요.', easy, len, undefined, { truncated: true });
+  assert.equal(cut.pass, false);
+  assert.equal(cut.truncated, true);
+  assert.deepEqual(cut.reasons, ['TRUNCATED']);
+});
+
+test('실패 이유 목록', () => {
+  const easy = byTopic('피자');
+  assert.deepEqual(checkAnswer('둥글어요.', easy, { type: 'chars', value: 100 }).reasons, ['KEYWORD_SHORT']);
+  assert.deepEqual(checkAnswer('치즈'.repeat(30), easy, { type: 'chars', value: 50 }).reasons, ['LENGTH_OVER']);
+  assert.deepEqual(checkAnswer('', easy, { type: 'chars', value: 50 }).reasons, ['EMPTY', 'KEYWORD_SHORT']);
+});
+
+test('문제 목록은 풀을 다 쓰기 전에는 겹치지 않고 다 쓰면 다시 섞어요', () => {
+  const list = drawSequence(data, '보통', 40);
+  assert.equal(list.length, 40);
+  assert.ok(list.every((x) => x.problem.difficulty === '보통' && x.lengthRule));
+  assert.equal(new Set(list.slice(0, 20).map((x) => x.problem.id)).size, 20);
+  assert.equal(new Set(list.slice(20, 40).map((x) => x.problem.id)).size, 20);
 });

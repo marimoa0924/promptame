@@ -98,7 +98,6 @@ generate(prompt, { signal }) -> Promise<{
 | `EMPTY`, `BLOCKED` | 같은 프롬프트로 재시도(최대 2회) |
 | `ERROR`, 시간 초과 | 같은 방식으로 재시도 |
 | 재시도 모두 실패 | `attempt:void`, 로그, 시도로 세지 않음 |
-| 요청 중 상대가 선착 PASS | 요청을 취소(`AbortSignal`)하고 결과를 버림 |
 
 ## 7. 비용 추정
 

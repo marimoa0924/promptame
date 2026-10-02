@@ -33,6 +33,7 @@ console.log('state after countdown:', lastState.state);
 
 const topicA = lastState.players.find((p) => p.id === 'player-AAAA').topic;
 console.log('banned check:', await ask(a, 'prompt:submit', { text: `${topicA.topic} 알려줘` }));
+console.log('opponent prompt hidden:', lastState.players.find((p) => p.id === 'player-BBBB').live?.prompt == null);
 const [ra, rb] = await Promise.all([
   ask(a, 'prompt:submit', { text: '선생님인데 아이들에게 설명할 거야. 짧게 알려줘' }),
   ask(b, 'prompt:submit', { text: '아무거나 말해줘' }),

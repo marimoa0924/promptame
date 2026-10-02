@@ -7,6 +7,13 @@ AI에게 주제문을 **직접 말하지 않고** 원하는 답을 끌어내는 
 ```bash
 npm install
 npm run dev        # http://localhost:3000 (서버 파일 수정 시 자동 재시작, 화면은 새로고침)
+npm test           # 판정 규칙·AI 클라이언트 테스트
+```
+
+AI는 `GEMINI_API_KEY`가 있으면 Gemini를, 없으면 목업을 쓴다.
+
+```bash
+GEMINI_API_KEY=... GEMINI_MODEL=gemini-2.5-flash-lite npm run dev
 ```
 
 - **혼자 배틀 화면 보기**: 방 만들기 → 상대 칸의 **🤖 연습봇과 붙기**
@@ -24,16 +31,17 @@ npm run dev        # http://localhost:3000 (서버 파일 수정 시 자동 재�
 5. 종료 → 흑백 전환 → 두둥! → The Winner is…… → 결과 카드 (총 시간 / 포인트 / 승패, 폭죽 or 우는 캐릭터)
 6. **한번 더 하기**(같은 방 설정) / **나가기**(로비)
 
-캐릭터를 누르면 말풍선 채팅을 할 수 있고, PASS면 "야호!", RETRY면 울어요.
+캐릭터는 PASS면 "야호!", RETRY면 울어요. 말은 이모티콘으로만 하고, 상대의 프롬프트는 판이 끝날 때까지 보이지 않아요.
 
 ## 구조
 
 ```
 server.js           Express + Socket.IO, 방 목록과 소켓 이벤트 연결
 game/room.js        방 상태 머신 (waiting → countdown → playing → ended → 한번 더), 점수·얼음·평가 시간
-game/ai.js          목업 AI (스트리밍 + 판정)  ← 실제 LLM으로 교체할 곳
-game/bot.js         연습봇 프롬프트·대사
-game/topics.js      주제문 / 분량 / 필수 키워드 / 금지어 / 힌트 데이터
+game/gemini.js      AI 클라이언트 (Gemini 호출 + 키 없을 때 쓰는 목업)
+game/bot.js         연습봇 프롬프트·이모티콘
+promptRules.js      금지어 검사·답변 판정·출제 (서버와 브라우저가 같이 씀)
+problems.json       문제 데이터 (엑셀 → build-problems.mjs)
 public/js/main.js   화면 전환, 종료·한번 더 하기·튜토리얼 연결
 public/js/game.js   게임 화면 (보드, 룰렛, 스트리밍, 평가 형광펜, PASS/RETRY, 채팅, 체력바)
 public/js/finale.js 게임 종료 연출 + 결과 카드 + 픽셀 폭죽
@@ -65,13 +73,15 @@ public/js/bg.js     디더링 픽셀 배경 캔버스
 
 | 클라 → 서버 | 서버 → 클라 |
 |---|---|
-| `room:create` `room:join` `room:leave` `room:rematch` `room:addBot` | `room:state` (전체 스냅샷) |
-| `prompt:submit` | `ai:start` `ai:chunk` `ai:judge` `ai:result` |
-| `player:typing` `player:emote` `player:chat` | `player:typing` `player:emote` `player:chat` |
+| `room:create` `room:join` `room:leave` `room:rematch` `room:addBot` | `room:state` (사람마다 따로 보내는 스냅샷) |
+| `prompt:submit` | `ai:start` `ai:chunk` `ai:judge` `ai:result` `ai:void` |
+| `player:typing` `player:emote` | `player:typing` `player:emote` |
 | | `game:event` (얼음) `game:end` |
 
 ## 다음 할 일
 
-- [ ] `game/ai.js`를 실제 LLM 스트리밍 + LLM 판정으로 교체
+- [x] 실제 판정 모듈(`promptRules.js`)과 문제 데이터 연결, Gemini 호출 코드
+- [ ] Gemini 실호출 확인 (키·모델명·한도)
+- [ ] 건너뛰기 규칙 확정 후 구현
 - [ ] 임의 매칭 (지금은 안내 토스트만)
 - [ ] 랭크 / 재화 / 가챠

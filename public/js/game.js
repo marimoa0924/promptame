@@ -4,6 +4,7 @@ import { socket, session, request } from './net.js';
 import { $, refs, charSvg, EMOTES, toast, copyText, formatTime, replay } from './ui.js';
 import { applyTheme, sceneSvg, sparkle } from './maps.js';
 import { coach } from './tutorial.js';
+import { checkPrompt } from '/shared/promptRules.js';
 
 const ROULETTE = {
   topic: ['광합성', '중력', '화산', '무지개', '소화', '민주주의', '인공지능', '훈민정음', '물의 순환', '달의 위상'],
@@ -12,7 +13,8 @@ const ROULETTE = {
 };
 const STREAK_FOR_FREEZE = 3;
 const FINAL_SECONDS = 10;
-const normalize = (s) => s.replace(/\s+/g, '').toLowerCase();
+const HIDDEN_PROMPT = '▶ (상대의 프롬프트는 비공개예요)';
+const bannedLine = (topic) => `금지어: ${topic.banned.join(', ')} (영어 번역어도 안 돼요)`;
 
 function createBoard(slot, isMe) {
   const el = $('#tpl-board').content.firstElementChild.cloneNode(true);
@@ -22,7 +24,6 @@ function createBoard(slot, isMe) {
   r.tag.textContent = isMe ? '나' : '상대';
   if (!isMe) {
     r.form.remove();
-    r.chatForm.remove();
     r.avatar.title = '';
   }
   return { el, r, isMe, playerId: null, topicKey: null, spin: {}, overlayKey: null, timers: {}, judgeTimers: [] };
@@ -146,12 +147,12 @@ export class Game {
       b.r[k].classList.remove('spinning');
       b.r[k].textContent = topic ? topic[k] : '???';
     }
-    b.r.banned.textContent = topic ? `금지어: ${topic.banned.join(', ')}` : '';
+    b.r.banned.textContent = topic ? bannedLine(topic) : '';
     if (b.isMe) this.checkBanned();
   }
 
   roulette(b, topic) {
-    b.r.banned.textContent = `금지어: ${topic.banned.join(', ')}`;
+    b.r.banned.textContent = bannedLine(topic);
     ['topic', 'length', 'keyword'].forEach((k, i) => {
       const el = b.r[k];
       const pool = ROULETTE[k];
@@ -174,7 +175,7 @@ export class Game {
 
   hydrateLive(b, live) {
     const { r } = b;
-    r.prompt.textContent = live ? `▶ ${live.prompt}` : '';
+    r.prompt.textContent = live ? (live.prompt == null ? HIDDEN_PROMPT : `▶ ${live.prompt}`) : '';
     r.answer.textContent = live ? live.text : '';
     r.answer.classList.toggle('streaming', !!live && live.phase === 'stream');
     this.showStamp(b, live?.result ?? null, false);
@@ -190,7 +191,7 @@ export class Game {
     const b = this.boardOf(playerId);
     if (!b) return;
     this.stopJudge(b);
-    b.r.prompt.textContent = `▶ ${prompt}`;
+    b.r.prompt.textContent = prompt == null ? HIDDEN_PROMPT : `▶ ${prompt}`;
     b.r.answer.textContent = '';
     b.r.answer.classList.add('streaming');
     this.showStamp(b, null);
@@ -203,6 +204,16 @@ export class Game {
     if (!b) return;
     b.r.answer.append(chunk);
     b.r.scroll.scrollTop = b.r.scroll.scrollHeight;
+  }
+
+  // AI가 끝내 답하지 못했다. 시도로 세지 않으니 그냥 다시 보내면 된다.
+  onAiVoid({ playerId, message }) {
+    const b = this.boardOf(playerId);
+    if (!b) return;
+    this.stopJudge(b);
+    this.hydrateLive(b, null);
+    b.el.classList.remove('busy');
+    if (b.isMe) toast(message, 'error', 3000);
   }
 
   // 평가 AI가 한 줄씩 형광펜을 칠하며 읽는다
@@ -288,28 +299,9 @@ export class Game {
     b.timers.bubble = setTimeout(() => el.classList.remove('show'), 3000);
   }
 
+  // 캐릭터를 누르면 폴짝 뛴다. 말은 이모티콘으로만 한다.
   bindChat() {
-    const { r } = this.boards.me;
-    r.avatar.addEventListener('click', () => {
-      replay(r.avatar, 'hop');
-      r.chatForm.hidden = !r.chatForm.hidden;
-      if (!r.chatForm.hidden) r.chatInput.focus();
-    });
-    this.boards.opp.r.avatar.addEventListener('click', () => replay(this.boards.opp.r.avatar, 'hop'));
-    r.chatInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') r.chatForm.hidden = true;
-    });
-    r.chatForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const text = r.chatInput.value.trim().slice(0, 30);
-      if (!text || !this.room) return;
-      socket.emit('player:chat', { text });
-      this.say(this.boards.me, text);
-      replay(r.avatar, 'hop');
-      r.chatInput.value = '';
-      r.chatForm.hidden = true;
-      coach.emit('chat');
-    });
+    for (const b of Object.values(this.boards)) b.r.avatar.addEventListener('click', () => replay(b.r.avatar, 'hop'));
   }
 
   // ---------- 입력 ----------
@@ -369,13 +361,14 @@ export class Game {
     r.counter.classList.toggle('over', !!limit && len > limit);
   }
 
+  // 서버와 같은 규칙 파일로 미리 검사한다. 최종 판단은 서버가 한다.
   checkBanned() {
     const { r } = this.boards.me;
-    const banned = this.me?.topic?.banned ?? [];
-    const text = normalize(r.input.value);
-    const hit = banned.find((w) => text.includes(normalize(w)));
-    r.warn.textContent = hit ? `'${hit}'은(는) 쓸 수 없어요!` : '';
-    r.form.classList.toggle('has-banned', !!hit);
+    const problem = this.me?.topic?.problem;
+    const check = problem && r.input.value.trim() ? checkPrompt(r.input.value, problem, null) : { ok: true };
+    const hit = check.code === 'FORBIDDEN';
+    r.warn.textContent = hit ? `'${check.word}'은(는) 쓸 수 없어요!` : '';
+    r.form.classList.toggle('has-banned', hit);
   }
 
   updateForm() {
@@ -414,6 +407,7 @@ export class Game {
         last = Date.now();
         socket.emit('player:emote', { emoji });
         this.popEmote(this.boards.me, emoji);
+        coach.emit('emote');
       });
       wrap.append(btn);
     }
@@ -438,16 +432,11 @@ export class Game {
     socket.on('ai:chunk', (d) => this.onAiChunk(d));
     socket.on('ai:judge', (d) => this.onAiJudge(d));
     socket.on('ai:result', (d) => this.onAiResult(d));
+    socket.on('ai:void', (d) => this.onAiVoid(d));
     socket.on('player:typing', (d) => this.onTyping(d));
     socket.on('player:emote', ({ playerId, emoji }) => {
       const b = this.boardOf(playerId);
       if (b) this.popEmote(b, emoji);
-    });
-    socket.on('player:chat', ({ playerId, text }) => {
-      const b = this.boardOf(playerId);
-      if (!b) return;
-      this.say(b, text);
-      replay(b.r.avatar, 'hop');
     });
     socket.on('game:event', (e) => {
       if (e.type !== 'freeze') return;

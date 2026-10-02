@@ -1,16 +1,25 @@
-import { TOPICS } from './topics.js';
-import { composeAnswer, streamText, judge, findBannedWord, bannedWords, lengthLabel } from './ai.js';
-import { botPrompt, botLine, BOT_NAMES } from './bot.js';
+import { readFileSync } from 'node:fs';
+import { checkPrompt, checkAnswer, drawSequence } from '../promptRules.js';
+import { createMockAI, generateWithRetry } from './gemini.js';
+import { botPrompt, botEmoji, BOT_NAMES } from './bot.js';
+
+const DATA = JSON.parse(readFileSync(new URL('../problems.json', import.meta.url), 'utf8'));
+const DIFFICULTY_KO = { easy: '쉬움', normal: '보통', hard: '어려움' };
+const SEQUENCE_LENGTH = 40;
+const PROMPT_HARD_CAP = 2000; // 방 설정이 무제한이어도 서버는 이 이상 받지 않는다
+const REPLAY_TICK_MS = 40;
+const REPLAY_MAX_TICKS = 75; // 답변 재생은 아무리 길어도 약 3초
+const JUDGE_MAX_MS = 4500;
 
 const COUNTDOWN_MS = 3500;
 const RECONNECT_GRACE_MS = 20_000;
 const FREEZE_MS = 5000;
 const STREAK_FOR_FREEZE = 3;
-const REQUIRED_HITS = { easy: 1, normal: 2, hard: 3 };
 // 평가 AI가 답변을 "읽는" 시간. 너무 빨리 채점되면 사용자가 결과를 읽을 틈이 없다.
 const JUDGE_BASE_MS = 900;
 const JUDGE_PER_LINE_MS = 750;
 const BOT_CHARS = ['cat', 'pigeon', 'dog', 'otaku'];
+const TUTORIAL_FIRST = { topic: '광합성', lengthRule: { name: '3문장 이내', type: 'sentences', value: 3 } };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -25,15 +34,17 @@ function shuffle(list) {
 
 // 상태: waiting → countdown → playing → ended → (한번 더) countdown …
 export class Room {
-  constructor(io, code, settings, onClose) {
+  constructor(io, code, settings, onClose, ai) {
     this.io = io;
+    this.ai = ai;
+    this.mock = createMockAI();
     this.code = code;
     this.settings = settings;
     this.onClose = onClose;
     this.players = new Map(); // playerId -> player
     this.state = 'waiting';
     this.round = 0; // 판이 바뀌면 증가. 이전 판의 AI 답변이 새 판에 섞이지 않게 한다.
-    this.topics = this.pickTopics();
+    this.sequence = this.pickSequence();
     this.countdownEndsAt = null;
     this.startedAt = null;
     this.endsAt = null;
@@ -46,12 +57,14 @@ export class Room {
     return this.settings.tutorial ? 1 : 2;
   }
 
-  pickTopics() {
-    const list = shuffle(TOPICS);
+  // 판 시작 때 문제 목록을 미리 뽑아 둔다. 두 사람이 같은 순서로 풀고, 각자 자기 속도로 넘어간다.
+  pickSequence() {
+    const difficulty = DIFFICULTY_KO[this.settings.difficulty] ?? '보통';
+    const list = drawSequence(DATA, difficulty, SEQUENCE_LENGTH);
     if (this.settings.tutorial) {
       // 튜토리얼은 기획서 예시(광합성)로 시작
-      const i = list.findIndex((t) => t.topic === '광합성');
-      list.unshift(...list.splice(i, 1));
+      const problem = DATA.problems.find((p) => p.topic === TUTORIAL_FIRST.topic);
+      list.unshift({ problem, lengthRule: TUTORIAL_FIRST.lengthRule });
     }
     return list;
   }
@@ -74,8 +87,12 @@ export class Room {
     this.io.to(this.code).emit(event, payload);
   }
 
+  // 사람마다 따로 보낸다. 상대 프롬프트는 판이 끝날 때까지 보여 주지 않는다.
   broadcast() {
-    if (!this.closed) this.emit('room:state', this.snapshot());
+    if (this.closed) return;
+    for (const p of this.humans()) {
+      if (p.socketId && p.connected) this.io.to(p.socketId).emit('room:state', this.snapshot(p.id));
+    }
   }
 
   humans() {
@@ -87,8 +104,13 @@ export class Room {
     return null;
   }
 
+  // { problem, lengthRule }
   topicOf(p) {
-    return this.topics[p.topicIdx % this.topics.length];
+    return this.sequence[p.topicIdx % this.sequence.length];
+  }
+
+  aiFor(p) {
+    return p.isBot || this.settings.tutorial ? this.mock : this.ai;
   }
 
   newPlayer(id, profile, isBot = false) {
@@ -133,7 +155,7 @@ export class Room {
 
     if (this.state === 'waiting' && this.players.size === this.capacity) this.startCountdown();
     else this.broadcast();
-    return { ok: true, room: this.snapshot() };
+    return { ok: true, room: this.snapshot(playerId) };
   }
 
   addBot() {
@@ -164,7 +186,13 @@ export class Room {
     const p = this.players.get(playerId);
     if (!p || this.closed) return;
     clearTimeout(p.dropTimer);
-    if (this.state === 'countdown' || this.state === 'playing') {
+    if (this.state === 'countdown') {
+      // 시작 전 카운트다운 중에 나가면 판이 무효다. 승패 없이 대기실로 돌아간다.
+      this.clearTimers();
+      this.state = 'waiting';
+      this.countdownEndsAt = null;
+      for (const other of this.players.values()) other.ready = false;
+    } else if (this.state === 'playing') {
       this.end('forfeit', this.opponentOf(playerId)?.id ?? null, playerId);
     }
     this.players.delete(playerId);
@@ -204,20 +232,21 @@ export class Room {
     if (Date.now() < p.frozenUntil) return { ok: false, error: '얼어붙어서 입력할 수 없어요!' };
 
     const text = String(raw ?? '').trim();
-    if (!text) return { ok: false, error: '프롬프트를 입력해 주세요' };
-    const limit = this.settings.promptLimit;
-    if (limit && [...text].length > limit) return { ok: false, error: `${limit}자를 넘었어요` };
-
-    const topic = this.topicOf(p);
-    const banned = findBannedWord(text, topic);
-    if (banned) return { ok: false, error: `'${banned}'은(는) 직접 쓸 수 없어요!` };
+    const item = this.topicOf(p);
+    const limit = this.settings.promptLimit || null;
+    const check = checkPrompt(text, item.problem, limit ?? PROMPT_HARD_CAP);
+    if (!check.ok) return { ok: false, error: promptError(check) };
 
     p.busy = true;
     p.attempts += 1;
     p.live = { prompt: text, text: '', phase: 'stream', result: null };
-    this.emit('ai:start', { playerId, prompt: text });
+    for (const other of this.players.values()) {
+      if (other.socketId && other.connected) {
+        this.io.to(other.socketId).emit('ai:start', { playerId: p.id, prompt: other.id === p.id ? text : null });
+      }
+    }
     this.broadcast();
-    this.runAnswer(p, text, topic).catch((err) => {
+    this.runAnswer(p, text, item).catch((err) => {
       console.error('[ai] answer failed', err);
       p.busy = false;
       this.broadcast();
@@ -225,27 +254,45 @@ export class Room {
     return { ok: true };
   }
 
-  async runAnswer(p, prompt, topic) {
+  async runAnswer(p, prompt, item) {
     const round = this.round;
     const alive = () => !this.closed && this.round === round && this.state === 'playing';
+    const { problem, lengthRule } = item;
 
-    const answer = composeAnswer(prompt, topic, REQUIRED_HITS[this.settings.difficulty]);
-    for await (const chunk of streamText(answer)) {
+    const gen = await generateWithRetry(this.aiFor(p), prompt, { problem, lengthRule });
+    if (!alive()) return;
+    if (gen.status !== 'OK') {
+      // AI가 끝내 답하지 못했다. 시도로 세지 않고 다시 보낼 수 있게 한다.
+      console.warn(`[ai] void: ${gen.status} ${gen.finishReason ?? ''}`);
+      p.busy = false;
+      p.attempts = Math.max(0, p.attempts - 1);
+      p.live = null;
+      this.emitTo(p, 'ai:void', { playerId: p.id, message: 'AI가 답하지 못했어요. 다시 보내 주세요' });
+      this.broadcast();
+      return;
+    }
+
+    // 판정은 서버가 지금 확정한다. 이후의 답변 재생과 평가 연출은 이 결과를 보여 주기만 한다.
+    const answer = gen.text;
+    const verdict = checkAnswer(answer, problem, lengthRule, DATA.difficultyRules, { truncated: gen.truncated });
+
+    for (const chunk of replayChunks(answer)) {
       if (!alive()) return;
       p.live.text += chunk;
       this.emit('ai:chunk', { playerId: p.id, chunk });
+      await sleep(REPLAY_TICK_MS);
     }
     if (!alive()) return;
 
     // 평가 AI가 답변을 줄마다 읽는 시간
     const lines = answer.split('\n').filter((l) => l.trim()).length;
-    const durationMs = JUDGE_BASE_MS + lines * JUDGE_PER_LINE_MS;
+    const durationMs = Math.min(JUDGE_MAX_MS, JUDGE_BASE_MS + lines * JUDGE_PER_LINE_MS);
     p.live.phase = 'judge';
     this.emit('ai:judge', { playerId: p.id, durationMs });
     await sleep(durationMs);
     if (!alive()) return;
 
-    const result = judge(answer, topic);
+    const result = { pass: verdict.pass, reason: verdictReason(verdict) };
     p.live.phase = 'done';
     p.live.result = result;
     if (result.pass) {
@@ -265,13 +312,17 @@ export class Room {
       p.streak = 0;
     }
     p.busy = false;
-    this.emit('ai:result', { playerId: p.id, ...result });
+    this.emit('ai:result', { playerId: p.id, ...result, verdict });
     this.broadcast();
 
     if (p.isBot) {
-      if (Math.random() < 0.4) this.later(() => this.chat(p.id, botLine(result.pass)), 600);
+      if (Math.random() < 0.4) this.later(() => this.emit('player:emote', { playerId: p.id, emoji: botEmoji(result.pass) }), 600);
       this.scheduleBot(p, 2500 + Math.random() * 3500);
     }
+  }
+
+  emitTo(p, event, payload) {
+    if (p.socketId && p.connected) this.io.to(p.socketId).emit(event, payload);
   }
 
   scheduleBot(bot, ms) {
@@ -281,7 +332,7 @@ export class Room {
   botTurn(bot) {
     if (this.state !== 'playing' || !this.players.has(bot.id)) return;
     if (bot.busy || Date.now() < bot.frozenUntil) return this.scheduleBot(bot, 1500);
-    const prompt = botPrompt(this.topicOf(bot));
+    const prompt = botPrompt();
     // 타이핑하는 척
     const len = [...prompt].length;
     [0.3, 0.6, 1].forEach((f, i) =>
@@ -290,10 +341,6 @@ export class Room {
     this.later(() => {
       if (this.state === 'playing' && this.players.has(bot.id)) this.submit(bot.id, prompt);
     }, 1700);
-  }
-
-  chat(playerId, text) {
-    this.emit('player:chat', { playerId, text });
   }
 
   end(reason, winnerId, leaverId = null) {
@@ -340,7 +387,7 @@ export class Room {
     const all = [...this.players.values()];
     if (!all.every((p) => p.ready)) return;
     // 같은 방 설정으로 초기화
-    this.topics = this.pickTopics();
+    this.sequence = this.pickSequence();
     this.startedAt = this.endsAt = null;
     for (const p of all) {
       Object.assign(p, { ready: false, score: 0, streak: 0, attempts: 0, topicIdx: 0, busy: false, frozenUntil: 0, live: null });
@@ -362,8 +409,10 @@ export class Room {
     this.onClose(this.code);
   }
 
-  snapshot() {
+  // viewerId: 이 스냅샷을 받는 사람. null이면 공개용(결과 화면)이다.
+  snapshot(viewerId = null) {
     const showTopic = this.state === 'playing' || this.state === 'ended';
+    const reveal = this.state === 'ended';
     return {
       code: this.code,
       settings: this.settings,
@@ -374,7 +423,8 @@ export class Room {
       serverNow: Date.now(),
       lastResult: this.state === 'ended' ? this.lastResult : null,
       players: [...this.players.values()].map((p) => {
-        const t = this.topicOf(p);
+        const { problem, lengthRule } = this.topicOf(p);
+        const hidePrompt = !reveal && p.id !== viewerId;
         return {
           id: p.id,
           name: p.name,
@@ -388,11 +438,49 @@ export class Room {
           frozenUntil: p.frozenUntil,
           topicIdx: p.topicIdx,
           topic: showTopic
-            ? { topic: t.topic, length: lengthLabel(t), keyword: t.keyword, banned: bannedWords(t) }
+            ? {
+                topic: problem.topic,
+                length: lengthRule.name,
+                keyword: problem.keywords.join(' · '),
+                keywords: problem.keywords,
+                banned: [problem.topic, ...problem.keywords],
+                problem, // 클라이언트도 같은 규칙 파일로 금지어를 미리 검사한다
+              }
             : null,
-          live: p.live,
+          live: p.live && hidePrompt ? { ...p.live, prompt: null } : p.live,
         };
       }),
     };
   }
+}
+
+// 답변을 약 3초 안에 다 보여 주도록 조각으로 나눈다
+function* replayChunks(text) {
+  const chars = [...text];
+  const step = Math.max(1, Math.ceil(chars.length / REPLAY_MAX_TICKS));
+  for (let i = 0; i < chars.length; i += step) yield chars.slice(i, i + step).join('');
+}
+
+function promptError(check) {
+  switch (check.code) {
+    case 'EMPTY':
+      return '프롬프트를 입력해 주세요';
+    case 'TOO_LONG':
+      return `${check.limit}자를 넘었어요`;
+    case 'FORBIDDEN':
+      return `'${check.word}'은(는) 직접 쓸 수 없어요!`;
+    default:
+      return '보낼 수 없는 프롬프트예요';
+  }
+}
+
+function verdictReason(v) {
+  if (v.pass) return `필수어 ${v.matched.join(', ')} 포함, 분량도 딱 맞아요!`;
+  const unit = v.length.type === 'sentences' ? '문장' : '자';
+  const parts = [];
+  if (v.reasons.includes('EMPTY')) parts.push('답변이 비어 있어요');
+  if (v.reasons.includes('TRUNCATED')) parts.push('답변이 너무 길어서 잘렸어요');
+  if (v.reasons.includes('LENGTH_OVER')) parts.push(`너무 길어요! (${v.length.actual}${unit} / ${v.length.limit}${unit} 이내)`);
+  if (v.reasons.includes('KEYWORD_SHORT')) parts.push(`필수어가 ${v.matched.length}개뿐이에요 (${v.needed}개 필요)`);
+  return parts.join(' · ');
 }
