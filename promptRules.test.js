@@ -97,7 +97,7 @@ test('답변 분량 검사', () => {
 });
 
 test('출제는 같은 난이도에서 안 나온 문제를 먼저 뽑아요', () => {
-  const easyIds = data.problems.filter((p) => p.difficulty === '쉬움').map((p) => p.id); // 새로 넣은 정말 쉬운 20개
+  const easyIds = data.problems.filter((p) => p.difficulty === '쉬움').map((p) => p.id); // 쉬움 풀
   const used = easyIds.slice(0, -1);
   const { problem, lengthRule } = drawQuestion(data, '쉬움', used);
   assert.equal(problem.id, easyIds.at(-1));
@@ -141,8 +141,9 @@ test('문제 목록은 풀을 다 쓰기 전에는 겹치지 않고 다 쓰면 �
   const list = drawSequence(data, '보통', 40);
   assert.equal(list.length, 40);
   assert.ok(list.every((x) => x.problem.difficulty === '보통' && x.lengthRule));
-  assert.equal(new Set(list.slice(0, 20).map((x) => x.problem.id)).size, 20);
-  assert.equal(new Set(list.slice(20, 40).map((x) => x.problem.id)).size, 20);
+  assert.equal(new Set(list.slice(0, 40).map((x) => x.problem.id)).size, 40);
+  const more = drawSequence(data, '보통', 120).map((x) => x.problem.id);
+  assert.equal(new Set(more.slice(0, 100)).size, 100); // 풀은 100개이므로 100개까지는 겹치지 않는다
 });
 
 test('분량을 직접 말하는 프롬프트는 막는다', () => {
@@ -160,13 +161,13 @@ test('숫자 없이 짧게 해 달라는 말과 비슷하게 생긴 다른 말�
   assert.equal(allowed('나는 교사야. 아이들 눈높이에 맞게 짧고 간결하게 설명해줘', mito), true);
 });
 
-test('난이도는 4단계이고 단계마다 문제가 20개, 필수어는 3개다', () => {
+test('난이도는 4단계이고 단계마다 문제가 100개, 필수어는 3개다', () => {
   const names = ['쉬움', '보통', '어려움', '매우 어려움'];
   assert.deepEqual(Object.keys(data.difficultyRules), names);
   assert.deepEqual(names.map((n) => data.difficultyRules[n].minKeywords), [1, 1, 2, 3]);
-  for (const n of names) assert.equal(data.problems.filter((p) => p.difficulty === n).length, 20, n);
+  for (const n of names) assert.equal(data.problems.filter((p) => p.difficulty === n).length, 100, n);
   assert.ok(data.problems.every((p) => p.keywords.length === 3));
-  assert.equal(data.problems.length, 80);
+  assert.equal(data.problems.length, 400);
 });
 
 test('쉬움 문제는 일상적인 낱말이고 필수어를 하나만 담아도 통과한다', () => {

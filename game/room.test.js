@@ -276,9 +276,9 @@ test('이전 판에서 본 문제는 다음 방에서 먼저 피한다(기기 �
 
   const c2 = setup({ hooks, devices, settings: { timeLimit: 5 } });
   await playing(c2);
-  const first = c2.room.sequence.slice(0, 16).map((x) => x.problem.id); // 쉬움 20개 중 A가 본 4개를 뺀 16개가 먼저 나온다
+  const first = c2.room.sequence.slice(0, 40).map((x) => x.problem.id); // 쉬움 100개 중 A가 본 4개를 뺀 나머지가 먼저 나온다
   assert.equal(first.filter((id) => seenA.includes(id)).length, 0);
-  assert.equal(new Set(first).size, 16);
+  assert.equal(new Set(first).size, 40);
 });
 
 test('판이 끝나면 랭크 점수가 정산되어 결과에 실린다', async () => {

@@ -1,5 +1,5 @@
 // 기기마다 "이미 본 문제"를 기억해서, 새 판을 만들 때 먼저 안 본 문제를 뽑게 한다.
-const MAX_PER_DEVICE = 80;
+const MAX_PER_DEVICE = 400;
 const MAX_DEVICES = 2000;
 
 export function createSeen(store) {

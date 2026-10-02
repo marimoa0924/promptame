@@ -91,12 +91,12 @@ test('파일에 저장하고 다시 읽는다. 깨진 파일은 빈 상태로 �
   assert.equal(createRanking(createJsonStore(file)).top().length, 0);
 });
 
-test('본 문제 기록: 중복 없이 이어 붙이고 기기당 80개까지만 보관한다', () => {
+test('본 문제 기록: 중복 없이 이어 붙이고 기기당 400개까지만 보관한다', () => {
   const seen = createSeen(createJsonStore(null));
   seen.add('d1', [1, 2, 3]);
   seen.add('d1', [3, 4]);
   assert.deepEqual(seen.ids('d1'), [1, 2, 3, 4]);
-  seen.add('d1', Array.from({ length: 100 }, (_, i) => 100 + i));
-  assert.equal(seen.ids('d1').length, 80);
+  seen.add('d1', Array.from({ length: 500 }, (_, i) => 100 + i));
+  assert.equal(seen.ids('d1').length, 400);
   assert.deepEqual(seen.ids('nobody'), []);
 });
