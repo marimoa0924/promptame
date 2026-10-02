@@ -446,3 +446,72 @@ test('연습봇과 한 판은 성적과 프롬프트 기록은 남기고 재화�
   assert.ok(a.habit.length >= 1);
   assert.equal(hooks.ranking.top().length, 0);
 });
+
+test('솔로: 상대 없이 혼자 시작하고, 끝나면 이기고 지는 것 없이 솔로 기록이 남는다', async () => {
+  const store = createJsonStore(null);
+  const hooks = { seen: createSeen(store), ranking: createRanking(store) };
+  hooks.accounts = createAccounts(store, hooks);
+  const a = hooks.accounts.createGuest({ nickname: '혼자' }).account;
+  const log = [];
+  const io = { to: (target) => ({ emit: (ev, p) => log.push({ target, ev, p }) }), in: () => ({ socketsLeave() {} }) };
+  const room = new Room(io, 'SOLO11', { difficulty: 'easy', timeLimit: 0.6, promptLimit: 100, map: 'east', title: '솔로', solo: true }, () => {}, fakeAI(), FAST, hooks);
+  rooms.push(room);
+  assert.equal(room.addBot().ok, false); // 솔로에서는 연습봇을 부를 수 없다
+  room.join({ id: 's', join() {}, data: {} }, 'pA', { name: '혼자', char: 'cat', device: a.id });
+  assert.equal(room.state, 'countdown'); // 혼자라도 바로 시작한다
+  await until(() => room.state === 'playing');
+  for (let i = 0; i < 3; i++) {
+    room.submit('pA', 'XQZ1');
+    await until(() => !room.players.get('pA').busy);
+  }
+  assert.equal(room.players.get('pA').frozenUntil, 0); // 3연속이어도 얼릴 상대가 없다
+  await until(() => room.state === 'ended');
+  const end = log.filter((l) => l.ev === 'game:end').at(-1).p;
+  assert.equal(end.isSolo, true);
+  assert.equal(end.winnerId, null);
+  assert.equal(end.ranking, undefined);
+  assert.equal(end.soloResult.score, 3);
+  assert.equal(end.soloResult.isBest, true);
+  assert.equal(end.soloResult.coins, 3);
+  assert.equal(hooks.ranking.top().length, 0); // 대전 랭킹에는 안 들어간다
+  assert.equal(hooks.accounts.soloBoard('쉬움', 0.6)[0].score, 3);
+  room.rematch('pA'); // 한 번 더: 혼자라서 바로 시작
+  assert.equal(room.state, 'countdown');
+});
+
+test('솔로 판을 중간에 나가면 기록하지 않는다', async () => {
+  const store = createJsonStore(null);
+  const hooks = { seen: createSeen(store), ranking: createRanking(store) };
+  hooks.accounts = createAccounts(store, hooks);
+  const a = hooks.accounts.createGuest({ nickname: '혼자' }).account;
+  const log = [];
+  const io = { to: () => ({ emit: (ev, p) => log.push({ ev, p }) }), in: () => ({ socketsLeave() {} }) };
+  let closed = false;
+  const room = new Room(io, 'SOLO22', { difficulty: 'easy', timeLimit: 60, promptLimit: 100, map: 'east', title: '솔로', solo: true }, () => (closed = true), fakeAI(), FAST, hooks);
+  rooms.push(room);
+  room.join({ id: 's', join() {}, data: {} }, 'pA', { name: '혼자', char: 'cat', device: a.id });
+  await until(() => room.state === 'playing');
+  room.submit('pA', 'XQZ1');
+  await until(() => !room.players.get('pA').busy);
+  room.leave('pA');
+  assert.equal(closed, true);
+  assert.equal(log.filter((l) => l.ev === 'game:end').length, 0);
+  assert.equal(a.solo.games, 0);
+});
+
+test('방 설정의 AI 제공자를 쓰고, 없으면 기본 AI로 돌아간다', async () => {
+  const calls = [];
+  const tag = (name) => ({ kind: name, generate: async (prompt, { problem }) => (calls.push(name), { status: 'OK', text: problem.keywords.join(' '), truncated: false, finishReason: 'STOP', latencyMs: 0, usage: null }) });
+  const hooks = { providers: { openai: tag('openai'), anthropic: tag('anthropic') } };
+  const c = setup({ ai: tag('default'), hooks, settings: { ai: 'anthropic' } });
+  await playing(c);
+  c.room.submit('pA', 'XQZ1');
+  await answered(c);
+  assert.deepEqual(calls, ['anthropic']);
+  assert.equal(c.room.snapshot('pA').players[0].aiKind, 'anthropic');
+  const d = setup({ ai: tag('default'), hooks, settings: { ai: 'gemini' } }); // 키 없는 제공자를 골랐다면 기본 AI
+  await playing(d);
+  d.room.submit('pA', 'XQZ1');
+  await answered(d);
+  assert.equal(calls.at(-1), 'default');
+});

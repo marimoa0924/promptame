@@ -40,6 +40,8 @@ export class Finale {
     r.intro.hidden = false;
     r.winnerIs.hidden = r.winnerName.hidden = true;
     r.dots.textContent = '';
+    // 솔로와 무효 판에는 승자가 없으니 "The Winner is" 대신 상황에 맞는 말을 쓴다
+    r.winnerIs.firstChild.nodeValue = result.isSolo ? '솔로 결과는' : result.reason === 'aborted' ? '이번 판은' : 'The Winner is';
     replay(r.dudung, 'boom');
     replay(document.body, 'shake');
 
@@ -49,10 +51,18 @@ export class Finale {
     }, 1300);
     this.later(() => {
       const winner = result.players.find((p) => p.id === result.winnerId);
-      r.winnerName.textContent = winner ? `${winner.name}!!!` : '무승부!!';
+      const mine = result.players.find((p) => p.id === meId);
+      const solo = result.isSolo ? result.soloResult : null;
+      r.winnerName.textContent = result.isSolo
+        ? `${mine?.score ?? 0} PASS${solo?.isBest ? ' 신기록' : ''}!!`
+        : result.reason === 'aborted'
+          ? '무효!!'
+          : winner
+            ? `${winner.name}!!!`
+            : '무승부!!';
       r.winnerName.hidden = false;
       replay(r.winnerName, 'pop');
-      if (winner) this.fireworks.burst(3);
+      if (winner || (result.isSolo && result.soloResult?.isBest)) this.fireworks.burst(3);
     }, 3700);
     this.later(() => this.showCard(), 6000);
   }
@@ -63,12 +73,13 @@ export class Finale {
     const { r, result, meId } = this;
     const me = result.players.find((p) => p.id === meId);
     const opp = result.players.find((p) => p.id !== meId);
-    const outcome = result.reason === 'aborted' ? 'void' : result.winnerId === null ? 'draw' : result.winnerId === meId ? 'win' : 'lose';
+    const solo = result.isSolo ? result.soloResult : null;
+    const outcome = result.isSolo ? 'solo' : result.reason === 'aborted' ? 'void' : result.winnerId === null ? 'draw' : result.winnerId === meId ? 'win' : 'lose';
 
     r.intro.hidden = true;
     r.card.hidden = false;
     r.card.className = `finale-card ${outcome}`;
-    r.title.textContent = { win: 'WIN!', lose: 'LOSE…', draw: 'DRAW', void: '무효' }[outcome];
+    r.title.textContent = { win: 'WIN!', lose: 'LOSE…', draw: 'DRAW', void: '무효', solo: solo?.isBest ? '신기록!' : '솔로 완료!' }[outcome];
     r.reason.textContent =
       result.reason === 'forfeit'
         ? result.leaverId === meId
@@ -77,7 +88,7 @@ export class Finale {
         : (REASON[result.reason] ?? '');
 
     // 캐릭터들: 이기면 환호, 지면 바닥 치며 울기
-    const mood = outcome === 'win' ? 'cheer' : outcome === 'lose' ? 'cry' : 'bob';
+    const mood = outcome === 'win' || (outcome === 'solo' && solo?.isBest) ? 'cheer' : outcome === 'lose' ? 'cry' : 'bob';
     const cast = [...new Set([me?.char ?? 'cat', ...Object.keys(CHARACTERS)])].slice(0, 4);
     r.crowd.innerHTML = cast
       .map((c, i) => `<span class="crowd-member ${mood}${i === 0 ? ' star' : ''}" style="animation-delay:${i * 0.12}s">${charSvg(c)}</span>`)
@@ -88,7 +99,17 @@ export class Finale {
       ['내 포인트', `${me?.score ?? 0} PASS`],
     ];
     if (opp) rows.push([`${opp.name}`, `${opp.score} PASS`]);
-    rows.push(['결과', { win: '승리', lose: '패배', draw: '무승부', void: '무효' }[outcome]]);
+    if (outcome === 'solo') {
+      rows.length = 1; // 총 게임 시간만 남기고 솔로 전용 항목으로 바꾼다
+      rows.push(['맞힌 문제', `${me?.score ?? 0} PASS`]);
+      if (solo) {
+        rows.push(['내 최고 기록', `${solo.best} PASS${solo.isBest ? ' 🎉 신기록!' : ''}`]);
+        if (solo.rank) rows.push(['솔로 랭킹', `${solo.rank}위`]);
+        rows.push(['재화', solo.coins ? `+${solo.coins} 🪙 (총 ${solo.total})` : (solo.note ?? '없음')]);
+      }
+    } else {
+      rows.push(['결과', { win: '승리', lose: '패배', draw: '무승부', void: '무효' }[outcome]]);
+    }
     const rw = result.rewards?.[meId];
     if (rw) rows.push(rw.coins || !rw.note ? ['재화', `${rw.coins >= 0 ? '+' : ''}${rw.coins} 🪙 (총 ${rw.total})`] : ['재화', rw.note]);
     const rk = result.ranking?.[meId];
@@ -105,7 +126,7 @@ export class Finale {
 
     this.renderHistory(result, meId);
 
-    if (outcome === 'win') this.fireworks.start();
+    if (outcome === 'win' || (outcome === 'solo' && solo?.isBest)) this.fireworks.start();
     else this.fireworks.stop();
   }
 
@@ -136,7 +157,7 @@ export class Finale {
     if (!this.visible) return;
     const opp = room.players.find((p) => p.id !== meId);
     const note = this.r.readyNote;
-    if (room.settings.tutorial) note.textContent = '';
+    if (room.settings.tutorial || room.settings.solo) note.textContent = '';
     else if (!opp) note.textContent = '상대가 방을 나갔어요. 한번 더 하기를 누르면 새 상대를 기다려요.';
     else if (opp.ready) note.textContent = `✦ ${opp.name}님이 한번 더 하고 싶어해요!`;
     else note.textContent = '';

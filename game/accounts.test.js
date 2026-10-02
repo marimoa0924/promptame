@@ -242,3 +242,31 @@ test('구글이 클라이언트 ID를 아는지 확인: 오류 페이지로 보�
   assert.equal((await checkClientId('x', { fetchImpl: async () => ({ headers: { get: () => 'https://accounts.google.com/v3/signin/identifier' } }) })).status, 'FOUND');
   assert.equal((await checkClientId('x', { fetchImpl: async () => { throw new Error('offline'); } })).status, 'UNKNOWN');
 });
+
+test('솔로 정산: 개인 최고 기록, 솔로 랭킹, 재화(하루 5판), 프롬프트 기록', () => {
+  const { accounts } = setup();
+  const a = guest(accounts, '에이');
+  const b = guest(accounts, '비이');
+  const solo = (acc, score, extra = {}) => accounts.settleSolo({ accountId: acc.id, name: acc.nickname, reason: 'timeup', difficulty: '보통', timeLimit: 180, score, firstTry: score, bestStreak: score, log: Array.from({ length: score }, () => entry('나는 교사야', 1, true)), ...extra });
+  let r = solo(a, 4);
+  assert.deepEqual([r.isBest, r.best, r.prevBest, r.rank, r.coins], [true, 4, 0, 1, 4]);
+  r = solo(a, 3);
+  assert.deepEqual([r.isBest, r.best, r.prevBest], [false, 4, 4]); // 최고 기록은 그대로
+  r = solo(b, 6);
+  assert.deepEqual([r.isBest, r.rank], [true, 1]);
+  assert.deepEqual(accounts.soloBoard('보통', 180).map((x) => [x.rank, x.name, x.score]), [[1, '비이', 6], [2, '에이', 4]]);
+  assert.deepEqual(accounts.soloBoard('보통', 300), []); // 다른 제한시간은 따로
+  assert.equal(a.solo.games, 2);
+  assert.equal(a.stats.games, 0); // 솔로는 대전 판 수에 안 들어간다
+  assert.equal(a.stats.passes, 7);
+  assert.equal(a.habit.length, 7);
+  assert.equal(a.games[0].outcome, 'solo');
+  assert.equal(accounts.report(a).solo.bests[0].score, 4);
+  assert.equal(solo(a, 0).note, '맞힌 문제가 없어요');
+  const before = a.coins;
+  for (let i = 0; i < 6; i++) solo(a, 2);
+  assert.equal(a.coins, before + 3 * 2); // 이미 2판(4+3 코인)을 받았고 하루 상한 5판까지 3판만 더 받는다
+  assert.deepEqual(accounts.settleSolo({ accountId: a.id, name: 'x', reason: 'aborted', difficulty: '보통', timeLimit: 180, score: 9 }), null);
+  accounts.remove(b);
+  assert.deepEqual(accounts.soloBoard('보통', 180).map((x) => x.name), ['에이']);
+});

@@ -19,6 +19,9 @@ export const ECON = {
   PASS_BONUS: 1, // PASS 하나당
   PASS_BONUS_CAP: 10,
   DAILY_GAMES: 10, // 하루에 재화를 받는 판 수 상한
+  SOLO_PER_PASS: 1, // 솔로 플레이: 맞힌 문제 하나당
+  SOLO_COIN_CAP: 10,
+  SOLO_DAILY_GAMES: 5, // 솔로로 재화를 받는 판은 하루 5판까지
   BUY_PRICE: 120, // 캐릭터를 골라서 사기
   GACHA_PRICE: 50, // 안 가진 캐릭터 중 무작위
 };
@@ -34,6 +37,7 @@ export function createAccounts(store, { ranking, seen, characters = CHARACTERS, 
   root.google ??= {}; // 구글 고유 번호(sub) -> 계정 번호
   root.tokens ??= {}; // 토큰 해시 -> 계정 번호
   const save = () => store.save();
+  const board = (root.soloBoard ??= {}); // '난이도|제한시간' -> [{ id, name, score, t }] 계정별 최고 기록 상위 20
 
   const blank = (kind, nickname) => ({
     id: `acc_${crypto.randomBytes(9).toString('base64url')}`,
@@ -50,7 +54,8 @@ export function createAccounts(store, { ranking, seen, characters = CHARACTERS, 
     stats: { games: 0, botGames: 0, wins: 0, losses: 0, draws: 0, passes: 0, firstTry: 0, retries: 0, bestStreak: 0 },
     games: [],
     habit: [],
-    daily: { date: '', games: 0 },
+    daily: { date: '', games: 0, solo: 0 },
+    solo: { games: 0, best: {} }, // best: { '난이도|제한시간': { score, t } }
   });
 
   function issueToken(acc) {
@@ -191,6 +196,7 @@ export function createAccounts(store, { ranking, seen, characters = CHARACTERS, 
       account: view(acc),
       habit: analyze(acc.habit),
       games: acc.games,
+      solo: { games: acc.solo?.games ?? 0, bests: Object.entries(acc.solo?.best ?? {}).map(([k, v]) => { const [difficulty, timeLimit] = k.split('|'); return { difficulty, timeLimit: Number(timeLimit), score: v.score, t: v.t }; }) },
       recent: acc.habit.slice(-10).reverse().filter((e) => e.text).map(({ t, text, pass, attempt, difficulty }) => ({ t, text, pass, attempt, difficulty })),
     };
   }
@@ -250,7 +256,56 @@ export function createAccounts(store, { ranking, seen, characters = CHARACTERS, 
     save();
   };
 
+  // 솔로 플레이 정산: 성적, 프롬프트 기록, 개인 최고 기록, 솔로 랭킹, 재화(하루 5판까지)
+  function settleSolo({ accountId, name, reason, difficulty, timeLimit, score, firstTry = 0, bestStreak = 0, log = [] }) {
+    const acc = get(accountId);
+    if (!acc || reason === 'aborted') return null;
+    acc.solo ??= { games: 0, best: {} };
+    const s = acc.stats;
+    s.passes += score;
+    s.firstTry += firstTry;
+    s.retries += log.filter((e) => !e.pass).length;
+    s.bestStreak = Math.max(s.bestStreak, bestStreak);
+    acc.solo.games += 1;
+    for (const e of log) acc.habit.push(makeEntry({ text: e.prompt, attempt: e.attempt, pass: e.pass, reasons: e.reasons ?? [], difficulty: e.difficulty ?? difficulty ?? '', t: now() }));
+    if (acc.habit.length > LIMITS.HABIT_MAX) acc.habit.splice(0, acc.habit.length - LIMITS.HABIT_MAX);
+    for (const e of acc.habit.slice(0, Math.max(0, acc.habit.length - LIMITS.HABIT_TEXT_KEEP))) e.text = '';
+
+    const key = `${difficulty}|${timeLimit}`;
+    const prev = acc.solo.best[key]?.score ?? 0;
+    const isBest = score > prev;
+    if (isBest) acc.solo.best[key] = { score, t: now() };
+    const list = (board[key] ??= []);
+    const mine = list.find((x) => x.id === acc.id);
+    if (isBest || mine) {
+      const entry = { id: acc.id, name: acc.nickname, score: Math.max(score, prev), t: isBest ? now() : mine?.t ?? now() };
+      board[key] = [...list.filter((x) => x.id !== acc.id), ...(entry.score > 0 ? [entry] : [])].sort((a, b) => b.score - a.score || a.t - b.t).slice(0, 20);
+    }
+    const rank = board[key].findIndex((x) => x.id === acc.id) + 1 || null;
+
+    let coins = 0;
+    let note = null;
+    const today = day(now());
+    if (acc.daily.date !== today) acc.daily = { date: today, games: 0, solo: 0 };
+    acc.daily.solo ??= 0;
+    if (score <= 0) note = '맞힌 문제가 없어요';
+    else if (acc.daily.solo >= ECON.SOLO_DAILY_GAMES) note = `오늘은 솔로로 재화를 받는 판 ${ECON.SOLO_DAILY_GAMES}판을 다 채웠어요`;
+    else {
+      acc.daily.solo += 1;
+      coins = Math.min(score, ECON.SOLO_COIN_CAP) * ECON.SOLO_PER_PASS;
+    }
+    acc.coins += coins;
+    acc.games.unshift({ t: now(), vs: '솔로', solo: true, bot: false, difficulty: difficulty ?? '', outcome: 'solo', score, oppScore: 0, reason, rp: null, coins });
+    if (acc.games.length > LIMITS.GAMES_MAX) acc.games.length = LIMITS.GAMES_MAX;
+    save();
+    return { coins, total: acc.coins, note, score, best: Math.max(score, prev), prevBest: prev, isBest, rank, key };
+  }
+
+  // 솔로 랭킹(난이도와 제한시간별 최고 기록)
+  const soloBoard = (difficulty, timeLimit, n = 10) => (board[`${difficulty}|${timeLimit}`] ?? []).slice(0, n).map((x, i) => ({ rank: i + 1, name: x.name, score: x.score, t: x.t }));
+
   function remove(acc) {
+    for (const k of Object.keys(board)) board[k] = board[k].filter((x) => x.id !== acc.id);
     for (const x of acc.tokens) delete root.tokens[x.h];
     if (acc.googleSub) delete root.google[acc.googleSub];
     delete root.byId[acc.id];
@@ -259,5 +314,5 @@ export function createAccounts(store, { ranking, seen, characters = CHARACTERS, 
     save();
   }
 
-  return { get, byToken, createGuest, loginGoogle, logout, touch, update, buy, gacha, view, report, settle, clearHistory, remove };
+  return { get, byToken, createGuest, loginGoogle, logout, touch, update, buy, gacha, view, report, settle, settleSolo, soloBoard, clearHistory, remove };
 }

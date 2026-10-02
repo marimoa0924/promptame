@@ -6,11 +6,11 @@ main에 올라온 UI와 서버(Express, Socket.IO)를 확인하고, 판정 모�
 
 | 확인 | 결과 |
 |---|---|
-| `node --test` | 87개 통과(규칙 파일 20개, AI 클라이언트 8개, 닉네임 3개, 방 규칙 28개, 랭킹과 저장 9개, 계정 13개, 습관 분석 6개) |
+| `node --test` | 100개 통과(규칙 파일 20개, AI 클라이언트 8개, AI 제공자 7개, 닉네임 3개, 방 규칙 31개, 랭킹과 저장 9개, 계정 16개, 습관 분석 6개) |
 | 방 규칙 검증(`game/room.test.js`) | 가짜 AI와 짧은 시간 설정으로 판 진행을 돌려 확인했다: 같은 순서의 문제, 상대 프롬프트 비공개, 금지어와 빈 입력과 길이 초과가 전송으로 안 세어짐, PASS한 사람만 진행, RETRY 뒤 PASS는 연속에 안 들어감, 분량 초과는 RETRY, 3연속 시 상대 5초 정지, 건너뛰기, AI 실패 시 시도 미집계, 종료 유예, 무승부, 포기, 카운트다운 중 나가기, 한 번 더 하기, 대기방 만료, 재접속 |
 | `npm run smoke` (서버 켠 상태) | 방 생성, 입장, 금지어 차단, 동시 진행, 재접속, 포기, 연습봇, 한 번 더 모두 통과 |
 | 브라우저 실행(두 사람) | 코드 6자리로 입장, 같은 문제 배포, 금지어 경고와 서버 거절, 전송과 PASS 연출, 상대 화면에 답변은 보이고 프롬프트는 숨김, 상대 점수 갱신, 건너뛰기, 포기 확인 창, 상대 승리 화면과 로비 복귀가 동작. 화면 오류 없음(샌드박스에서 막힌 외부 폰트 요청만 실패) |
-| Gemini 실제 호출 | 사용자 컴퓨터에서 `✅ Gemini 연결 확인 (1298ms)`를 확인했다(`gemini-3.5-flash-lite`, 생각 설정은 400으로 거부되어 빼고 호출). 게임 중 답변 품질과 분량 준수는 아직 확인 전이다 |
+| Gemini 실제 호출 | 사용자 컴퓨터에서 서버 시작 연결 확인(`✅ Gemini 연결 확인 (1298ms)`)을 확인했다(지금은 `AI_SELFTEST=1`일 때만 실행)(`gemini-3.5-flash-lite`, 생각 설정은 400으로 거부되어 빼고 호출). 게임 중 답변 품질과 분량 준수는 아직 확인 전이다 |
 
 ## 2. 연결한 것
 
@@ -67,6 +67,7 @@ main에 올라온 UI와 서버(Express, Socket.IO)를 확인하고, 판정 모�
 
 | D-I | 로그인, 계정, 재화, 가챠, 프롬프트 습관 분석이 이후 단계였다 | 요청에 따라 구현했다. 구글 또는 게스트 로그인, 계정별 성적·캐릭터·재화·랭킹, 상점과 뽑기, 습관 분석(10 문서). 이벤트 `auth:*`, `account:*`, `shop:*`가 추가됐다 |
 | D-J | 팀원이 캐릭터 6종(미쿠, 뱀, 공대생, 사마귀, 메타몽, 치이카와)을 추가했다. 이 중 미쿠, 메타몽, 치이카와는 기존 작품의 캐릭터다 | 확정 사항(기존 게임의 캐릭터와 에셋을 쓰지 않는다)과 충돌할 수 있다. 상점 캐릭터로만 쓰이도록 구조는 맞췄다. 판단은 팀이 한다. 08 문서 Q-12 |
+| D-K | AI가 Gemini 하나였고 솔로 플레이가 없었다 | 요청에 따라 구현했다. 방 설정에서 Gemini, GPT, Claude 선택(키가 있는 것만), 솔로 플레이(개인 최고, 솔로 랭킹, 재화). 이벤트 `ranking:solo` 추가. 11 문서. GPT와 Claude는 실호출을 시험하지 못했다 |
 | D-G | 난이도가 3단계였고 보통도 너무 어려웠다 | 4단계로 바꿨다. 기존 쉬움은 보통, 보통은 어려움, 어려움은 매우 어려움으로 옮기고 새 쉬움 문제 20개를 추가했다(엑셀 원본과 `problems.json` 모두). 필수어 최소 개수는 쉬움 1, 보통 1, 어려움 2, 매우 어려움 3이다. 화면의 난이도 선택도 4개다 |
 
 이전에 있던 차이 중 해결된 것: 건너뛰기 버튼(D-3), 닉네임 2~8자와 금칙어(D-4).
@@ -75,7 +76,7 @@ main에 올라온 UI와 서버(Express, Socket.IO)를 확인하고, 판정 모�
 
 | 방향 | 이벤트 |
 |---|---|
-| 클라이언트에서 서버 | `room:create`, `room:join`(재접속 겸용), `room:leave`, `room:rematch`, `room:addBot`, `prompt:submit`, `player:typing`, `prompt:skip`, `ranking:get`(랭킹 목록과 내 순위), `auth:me`, `auth:guest`, `auth:google`, `auth:logout`, `account:get`, `account:update`, `account:clearHistory`, `account:delete`, `shop:buy`, `shop:gacha` |
+| 클라이언트에서 서버 | `room:create`, `room:join`(재접속 겸용), `room:leave`, `room:rematch`, `room:addBot`, `prompt:submit`, `player:typing`, `prompt:skip`, `ranking:get`(랭킹 목록과 내 순위), `auth:me`, `auth:guest`, `auth:google`, `auth:logout`, `account:get`, `account:update`, `account:clearHistory`, `account:delete`, `shop:buy`, `shop:gacha`, `ranking:solo`(솔로 랭킹) |
 | 서버에서 클라이언트 | `room:state`(사람마다 따로 보내는 스냅샷), `ai:start`, `ai:chunk`, `ai:judge`, `ai:result`(판정 `verdict` 포함), `ai:void`, `player:typing`, `game:event`(`freeze`, `skip`), `game:end` |
 
 ## 6. 남은 일 (우선순위 순)

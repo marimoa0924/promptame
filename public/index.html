@@ -70,10 +70,58 @@
       <article class="panel panel-start">
         <h2 class="panel-title">게임 시작</h2>
         <div class="tabs" role="tablist">
+          <button class="tab" data-tab="solo" role="tab">솔로</button>
           <button class="tab" data-tab="random" role="tab">임의 매칭</button>
           <button class="tab active" data-tab="create" role="tab">방 만들기</button>
           <button class="tab" data-tab="join" role="tab">코드 입력</button>
         </div>
+
+        <form class="tab-body" data-body="solo" id="form-solo" hidden>
+          <p class="muted">상대 없이 혼자, 시간 안에 최대한 많은 문제를 PASS하는 점수 도전이에요. 개인 최고 기록과 솔로 랭킹이 쌓여요.</p>
+          <div class="field">
+            <span>맵</span>
+            <div class="chips map-chips" data-name="map" id="solo-map-chips"></div>
+          </div>
+          <div class="field">
+            <span>난이도</span>
+            <div class="chips" data-name="difficulty">
+              <button type="button" data-value="easy">쉬움</button>
+              <button type="button" data-value="normal" class="on">보통</button>
+              <button type="button" data-value="hard">어려움</button>
+              <button type="button" data-value="expert">매우 어려움</button>
+            </div>
+          </div>
+          
+          <div class="field-row">
+            <div class="field">
+              <span>제한시간</span>
+              <div class="chips" data-name="timeLimit">
+                <button type="button" data-value="120">2분</button>
+                <button type="button" data-value="180" class="on">3분</button>
+                <button type="button" data-value="300">5분</button>
+              </div>
+            </div>
+            <div class="field">
+              <span>프롬프트 글자 제한</span>
+              <div class="chips" data-name="promptLimit">
+                <button type="button" data-value="50">50</button>
+                <button type="button" data-value="100" class="on">100</button>
+                <button type="button" data-value="150">150</button>
+                <button type="button" data-value="300">300</button>
+                <button type="button" data-value="0">∞</button>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <span>AI 모델 <small class="muted">(두 사람이 같은 AI를 써요)</small></span>
+            <div class="chips" data-name="ai" id="ai-chips-solo">
+              <button type="button" data-value="gemini">Gemini</button>
+              <button type="button" data-value="openai">GPT</button>
+              <button type="button" data-value="anthropic">Claude</button>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-block" type="submit">솔로 시작</button>
+        </form>
 
         <div class="tab-body" data-body="random" hidden>
           <p class="muted">내 랭크에 맞는 상대를 찾아드려요.</p>
@@ -96,6 +144,14 @@
               <button type="button" data-value="normal" class="on">보통</button>
               <button type="button" data-value="hard">어려움</button>
               <button type="button" data-value="expert">매우 어려움</button>
+            </div>
+          </div>
+          <div class="field">
+            <span>AI 모델 <small class="muted">(두 사람이 같은 AI를 써요)</small></span>
+            <div class="chips" data-name="ai" id="ai-chips-create">
+              <button type="button" data-value="gemini">Gemini</button>
+              <button type="button" data-value="openai">GPT</button>
+              <button type="button" data-value="anthropic">Claude</button>
             </div>
           </div>
           <div class="field-row">
@@ -246,6 +302,23 @@
     <div class="modal-card ranking-card">
       <h2 class="panel-title">랭킹</h2>
       <p class="ranking-me" data-ref="me"></p>
+      <div class="chips ranking-tabs" data-ref="tabs">
+        <button type="button" data-tab="versus" class="on">대전</button>
+        <button type="button" data-tab="solo">솔로</button>
+      </div>
+      <div class="ranking-solo-filter" data-ref="soloFilter" hidden>
+        <div class="chips" data-ref="soloDiff">
+          <button type="button" data-v="easy">쉬움</button>
+          <button type="button" data-v="normal" class="on">보통</button>
+          <button type="button" data-v="hard">어려움</button>
+          <button type="button" data-v="expert">매우 어려움</button>
+        </div>
+        <div class="chips" data-ref="soloTime">
+          <button type="button" data-v="120">2분</button>
+          <button type="button" data-v="180" class="on">3분</button>
+          <button type="button" data-v="300">5분</button>
+        </div>
+      </div>
       <ol class="ranking-list" data-ref="list"></ol>
       <p class="muted ranking-rules" data-ref="rules">승리 +25 · 무승부 +5 · 패배 -10 · 포기 -15 (상대 포기로 이기면 +12). PASS가 너무 적은 판과 같은 상대와 1시간에 5판 넘게 한 판은 반영되지 않아요. 이 브라우저(기기)를 기준으로 쌓여요.</p>
       <div class="modal-actions"><button class="btn" data-ref="close">닫기</button></div>

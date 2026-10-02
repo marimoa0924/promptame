@@ -147,9 +147,9 @@ export class Game {
 
     $('#screen-game').classList.toggle('tutorial', !!room.settings.tutorial);
     $('#room-title').textContent = room.settings.title;
-    $('#room-code').textContent = room.settings.tutorial ? '튜토리얼 모드' : `방 코드 ${room.code} ⧉`;
+    $('#room-code').textContent = room.settings.tutorial ? '튜토리얼 모드' : room.settings.solo ? '솔로 플레이' : `방 코드 ${room.code} ⧉`;
     this.renderHud($('#hud-me'), this.me);
-    this.renderHud($('#hud-opp'), this.opp, room.settings.tutorial ? '튜토리얼' : '상대 기다리는 중');
+    this.renderHud($('#hud-opp'), this.opp, room.settings.tutorial ? '튜토리얼' : room.settings.solo ? '솔로' : '상대 기다리는 중');
     this.renderBoard(this.boards.me, this.me);
     this.renderBoard(this.boards.opp, this.opp);
     this.updateForm();
@@ -204,7 +204,7 @@ export class Game {
       this.hydrateLive(b, p.live);
     }
     r.name.textContent = `${p.name}${p.isBot ? ' 🤖' : ''}`;
-    if (b.isMe) r.tag.textContent = `나 · ${p.aiKind === 'gemini' ? 'Gemini' : '목 AI'}`;
+    if (b.isMe) r.tag.textContent = `나 · ${{ gemini: 'Gemini', openai: 'GPT', anthropic: 'Claude' }[p.aiKind] ?? '목 AI'}`;
     if (r.avatar.dataset.char !== p.char) {
       r.avatar.dataset.char = p.char;
       r.avatar.innerHTML = charSvg(p.char);
@@ -648,9 +648,11 @@ export class Game {
     const room = this.room;
     let key = null;
     let html = '';
-    if (!b.isMe && room.settings.tutorial) {
+    if (!b.isMe && (room.settings.tutorial || room.settings.solo)) {
       key = 'solo';
-      html = `<div class="ov-icon">📘</div><p>튜토리얼 모드<br><small>상대 없이 혼자 연습하는 중이에요</small></p>`;
+      html = room.settings.solo
+        ? `<div class="ov-icon">🎯</div><p>솔로 플레이<br><small>시간 안에 최대한 많이 PASS해 보세요!</small></p>`
+        : `<div class="ov-icon">📘</div><p>튜토리얼 모드<br><small>상대 없이 혼자 연습하는 중이에요</small></p>`;
     } else if (!p && !b.isMe) {
       key = 'waiting';
       html = `<div class="ov-icon spin">${sparkle()}</div><p>상대를 기다리는 중<span class="dots"></span></p>

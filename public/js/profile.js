@@ -5,7 +5,7 @@ import { state, setAccount, renderGoogleButton, logout } from './auth.js';
 
 const el = (tag, cls, text) => Object.assign(document.createElement(tag), { className: cls ?? '', textContent: text ?? '' });
 const pct = (x) => `${Math.round(x * 100)}%`;
-const OUTCOME = { win: '승', loss: '패', draw: '무' };
+const OUTCOME = { win: '승', loss: '패', draw: '무', solo: '솔' };
 const when = (t) => new Date(t).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 function section(title) {
@@ -57,6 +57,15 @@ export function initProfile() {
     stats.append(grid);
     r.body.append(stats);
 
+    // 솔로 기록
+    const soloBox = section('솔로 기록');
+    if (!res.solo?.games) soloBox.append(el('p', 'muted', '아직 솔로 플레이를 안 했어요. 로비의 "솔로" 탭에서 혼자 도전해 보세요!'));
+    else {
+      soloBox.append(el('p', 'muted', `솔로 ${res.solo.games}판`));
+      for (const b of [...res.solo.bests].sort((x, y) => y.score - x.score)) soloBox.append(el('p', 'pf-solo-best', `${b.difficulty} · ${b.timeLimit / 60}분 · 최고 ${b.score} PASS`));
+    }
+    r.body.append(soloBox);
+
     // 프롬프트 습관
     const hab = section('프롬프트 작성 습관');
     if (!habit.enough) {
@@ -87,7 +96,7 @@ export function initProfile() {
     if (!games.length) gs.append(el('p', 'muted', '아직 한 판도 안 했어요.'));
     for (const g of games.slice(0, 10)) {
       const row = el('div', 'pf-game');
-      row.append(el('span', `pf-out ${g.outcome}`, OUTCOME[g.outcome]), el('span', '', `${g.vs}${g.bot ? ' 🤖' : ''} · ${g.score} : ${g.oppScore}`));
+      row.append(el('span', `pf-out ${g.outcome}`, OUTCOME[g.outcome]), el('span', '', g.outcome === 'solo' ? `솔로 · ${g.score} PASS` : `${g.vs}${g.bot ? ' 🤖' : ''} · ${g.score} : ${g.oppScore}`));
       const extra = [g.difficulty, g.rp != null ? `${g.rp >= 0 ? '+' : ''}${g.rp} RP` : null, g.coins ? `${g.coins > 0 ? '+' : ''}${g.coins}🪙` : null].filter(Boolean).join(' · ');
       row.append(el('span', 'muted small', `${extra} · ${when(g.t)}`));
       gs.append(row);

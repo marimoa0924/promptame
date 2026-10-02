@@ -12,6 +12,8 @@ npm test           # 판정 규칙·AI 클라이언트 테스트
 
 방 최대 개수(`MAX_ROOMS`, 기본 500)와 허용할 사이트(`ALLOWED_ORIGINS`, 프록시 뒤에서 주소가 다를 때만)는 환경변수로 바꿀 수 있어요.
 
+AI는 방을 만들 때 Gemini, GPT, Claude 중에서 고를 수 있어요(키가 있는 것만). 로비의 "솔로" 탭에서는 상대 없이 혼자 점수 도전을 할 수 있어요(`docs/spec/11-ai-providers-and-solo.md`).
+
 로그인은 게스트(버튼 한 번)와 구글을 지원해요. 구글 로그인을 켜려면 구글 클라우드 콘솔에서 만든 웹 클라이언트 ID를 `.env`의 `GOOGLE_CLIENT_ID`에 넣어요(설정 방법은 `docs/spec/10-accounts-personalization.md`). 계정, 랭킹, 재화, 성적, 프롬프트 습관 기록은 모두 `store.json`에 저장돼요.
 
 랭킹(RP)과 "이미 본 문제" 기록은 `store.json`에 저장돼요 (`DATA_FILE`로 위치 변경, git에는 안 올라가요).

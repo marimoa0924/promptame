@@ -3,7 +3,7 @@ import { socket, session, request, tokenStore } from './net.js';
 import { $, showScreen, toast } from './ui.js';
 import { playIntro } from './intro.js';
 
-export const state = { account: null, googleEnabled: false, clientId: '' };
+export const state = { account: null, googleEnabled: false, clientId: '', providers: [], defaultAi: 'mock' };
 const listeners = [];
 export const onAccount = (fn) => listeners.push(fn);
 
@@ -87,6 +87,8 @@ export async function startAuth(onReady) {
     const cfg = await (await fetch('/config.json')).json();
     state.clientId = cfg.googleClientId ?? '';
     state.googleEnabled = !!state.clientId;
+    state.providers = cfg.providers ?? [];
+    state.defaultAi = cfg.defaultAi ?? 'mock';
   } catch {
     /* 설정을 못 읽으면 구글 로그인은 꺼 둔다 */
   }

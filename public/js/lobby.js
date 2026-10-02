@@ -66,19 +66,39 @@ export function initLobby({ onEnterRoom, onOpenShop }) {
     renderChars();
   }
 
-  // 맵 선택: 각 카드가 자기 테마 색으로 무대 미리보기를 그린다
-  $('#map-chips').replaceChildren(
-    ...MAP_IDS.map((id, i) => {
-      const t = THEMES[id];
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.dataset.value = id;
-      btn.className = `map-chip${i === 0 ? ' on' : ''}`;
-      btn.innerHTML = `<span class="map-thumb">${sceneSvg(id)}</span><span class="map-name">${t.name}</span><span class="map-sub">${t.sub}</span>`;
-      applyTheme(btn, id);
-      return btn;
-    }),
-  );
+  // 맵 선택: 각 카드가 자기 테마 색으로 무대 미리보기를 그린다(방 만들기와 솔로 양쪽에)
+  const fillMaps = (container) =>
+    container.replaceChildren(
+      ...MAP_IDS.map((id, i) => {
+        const t = THEMES[id];
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.dataset.value = id;
+        btn.className = `map-chip${i === 0 ? ' on' : ''}`;
+        btn.innerHTML = `<span class="map-thumb">${sceneSvg(id)}</span><span class="map-name">${t.name}</span><span class="map-sub">${t.sub}</span>`;
+        applyTheme(btn, id);
+        return btn;
+      }),
+    );
+  fillMaps($('#map-chips'));
+  fillMaps($('#solo-map-chips'));
+
+  // 서버에 API 키가 있는 AI만 고를 수 있다. 키가 하나도 없으면 목 AI로 진행한다는 안내만 보여 준다.
+  function applyProviders(info = [], defaultAi = 'mock') {
+    const any = info.some((p) => p.ok);
+    for (const group of $$('.chips[data-name=ai]')) {
+      if (!any) {
+        group.replaceChildren(Object.assign(document.createElement('span'), { className: 'muted', textContent: '목 AI (서버에 API 키가 없어요)' }));
+        continue;
+      }
+      for (const btn of $$('button', group)) {
+        const p = info.find((x) => x.id === btn.dataset.value);
+        btn.disabled = !p?.ok;
+        btn.title = p?.ok ? `${p.label} · ${p.model}` : `${p?.label ?? btn.textContent}: 서버에 API 키가 없어요`;
+        btn.classList.toggle('on', p?.ok && p.id === defaultAi);
+      }
+    }
+  }
 
   // 탭
   for (const tab of $$('.tab')) {
@@ -100,7 +120,7 @@ export function initLobby({ onEnterRoom, onOpenShop }) {
   }
 
   const readSettings = (form) => {
-    const settings = { title: form.title.value };
+    const settings = { title: form.title?.value ?? '' };
     for (const group of $$('.chips', form)) settings[group.dataset.name] = $('.on', group)?.dataset.value;
     return settings;
   };
@@ -138,6 +158,21 @@ export function initLobby({ onEnterRoom, onOpenShop }) {
     });
   });
 
+  // 솔로: 상대 없이 혼자 시작한다. 방은 만들어지지만 코드로 들어올 사람은 없다.
+  $('#form-solo').addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!nameOk()) return;
+    withBusy(e.currentTarget, async () => {
+      const res = await request('room:create', {
+        playerId: session.playerId,
+        profile,
+        settings: { ...readSettings(e.currentTarget), title: '솔로 플레이', solo: true },
+      });
+      if (!res.ok) return toast(res.error, 'error');
+      onEnterRoom(res.room);
+    });
+  });
+
   $('#form-join').addEventListener('submit', (e) => {
     e.preventDefault();
     // 복사해 온 코드에 섞인 공백·하이픈 등은 떼고 읽는다
@@ -153,6 +188,7 @@ export function initLobby({ onEnterRoom, onOpenShop }) {
 
   return {
     applyAccount,
+    applyProviders,
     selectedMap: () => $('#map-chips .on')?.dataset.value ?? 'east',
     profile: () => profile,
   };
