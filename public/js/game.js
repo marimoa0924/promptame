@@ -270,6 +270,7 @@ export class Game {
     const { r } = b;
     r.prompt.textContent = live ? (live.prompt == null ? HIDDEN_PROMPT : `▶ ${live.prompt}`) : '';
     r.answer.textContent = live ? live.text : '';
+    r.hint.hidden = true;
     r.answer.classList.toggle('streaming', !!live && live.phase === 'stream');
     this.showStamp(b, live?.result ?? null, false);
   }
@@ -286,6 +287,7 @@ export class Game {
     this.stopJudge(b);
     b.r.prompt.textContent = prompt == null ? HIDDEN_PROMPT : `▶ ${prompt}`;
     b.r.answer.textContent = '';
+    b.r.hint.hidden = true;
     b.r.answer.classList.add('streaming');
     this.showStamp(b, null);
     b.el.classList.add('busy');
@@ -339,12 +341,13 @@ export class Game {
     b.el.classList.remove('judging');
   }
 
-  onAiResult({ playerId, pass, reason }) {
+  onAiResult({ playerId, pass, reason, verdict }) {
     const b = this.boardOf(playerId);
     if (!b) return;
     this.stopJudge(b);
     for (const s of b.r.answer.querySelectorAll('.line')) s.className = 'line read';
     this.showStamp(b, { pass, reason });
+    if (!pass && b.isMe) this.showHint(b, verdict?.reasons ?? []);
 
     // PASS: 검은 화면 / RETRY: 블루스크린
     const f = b.r.flash;
@@ -363,6 +366,17 @@ export class Game {
     this.say(b, pass ? '야호!' : '엉엉…');
 
     if (b.isMe) coach.emit('result');
+  }
+
+  // 틀렸을 때 정답란 바로 위에 반투명 프롬프트 조언을 띄운다. 이유(reasons)에 맞춰 고른다.
+  showHint(b, reasons) {
+    const tips = [];
+    if (reasons.includes('KEYWORD_SHORT')) tips.push('특징, 구성 요소, 쓰임새, 만드는 순서처럼 AI가 풀어서 말할 거리를 구체적으로 요청해 보세요.');
+    if (reasons.includes('LENGTH_OVER') || reasons.includes('TRUNCATED')) tips.push('"핵심만 짧게"처럼 답을 줄여 달라고 말해 보세요. (숫자로 분량을 정하는 건 안 돼요)');
+    if (reasons.includes('EMPTY')) tips.push('AI가 답하지 못했어요. 무엇을 설명해 달라는지 문장으로 분명하게 써 보세요.');
+    if (!tips.length) return;
+    b.r.hint.textContent = `💡 ${tips.join(' ')}`;
+    b.r.hint.hidden = false;
   }
 
   showStamp(b, result, animate = true) {

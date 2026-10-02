@@ -398,6 +398,13 @@ b { font-weight: 700; }
 .prompt-line:empty::before { content: '프롬프트를 보내면 내 캐릭터가 여기서 답해요'; }
 .board.opp .prompt-line:empty::before { content: '상대 캐릭터의 답변이 여기 떠요'; }
 .answer { white-space: pre-wrap; font-size: 1.02rem; }
+.answer-hint {
+  margin: 0 0 .5rem; padding: .45rem .7rem; border-radius: 10px; font-size: .88rem; line-height: 1.4;
+  background: rgba(255, 214, 102, .22); border: 1px solid rgba(255, 214, 102, .45); color: inherit; opacity: .85;
+  animation: hint-in .3s ease-out;
+}
+.answer-hint[hidden] { display: none; }
+@keyframes hint-in { from { opacity: 0; transform: translateY(4px); } to { opacity: .85; transform: none; } }
 .answer.streaming::after {
   content: ''; display: inline-block; width: 9px; height: 1em; margin-left: 2px; vertical-align: -2px;
   background: var(--accent); animation: blink 0.6s steps(2) infinite;
