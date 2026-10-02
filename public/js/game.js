@@ -2,7 +2,7 @@
 // 네트워크 응답을 기다리는 동안에도 루프와 애니메이션은 계속 돈다.
 import { socket, session, request } from './net.js';
 import { $, refs, charSvg, EMOTES, toast, copyText, formatTime, replay } from './ui.js';
-import { applyTheme, sceneSvg, sparkle } from './maps.js';
+import { applyTheme, sceneSvg, sparkle, SCENE_W, SCENE_TOP, SCENE_BOTTOM, SCENE_FLOOR } from './maps.js';
 import { coach } from './tutorial.js';
 
 const ROULETTE = {
@@ -25,8 +25,17 @@ function createBoard(slot, isMe) {
     r.chatForm.remove();
     r.avatar.title = '';
   }
+  // 배경 SVG가 늘어나는 비율에 맞춰 캐릭터를 바닥 위에 세운다
+  new ResizeObserver(([entry]) => {
+    const { width, height } = entry.contentRect;
+    const scale = Math.max(width / SCENE_W, height / (SCENE_BOTTOM - SCENE_TOP));
+    r.frame.style.setProperty('--floor', `${Math.round((SCENE_BOTTOM - SCENE_FLOOR) * scale)}px`);
+  }).observe(r.frame);
   return { el, r, isMe, playerId: null, topicKey: null, spin: {}, overlayKey: null, timers: {}, judgeTimers: [] };
 }
+
+const REEL_SPINS = 14;
+const reelItem = (text) => Object.assign(document.createElement('span'), { className: 'reel-item', textContent: text });
 
 export class Game {
   constructor() {
@@ -98,14 +107,23 @@ export class Game {
     }
   }
 
+  // HUD는 한 번만 뼈대를 만들고 값만 바꾼다 (말풍선이 지워지지 않게)
   renderHud(el, p, emptyLabel = '') {
-    el.innerHTML = `
-      <div class="hud-avatar">${p ? charSvg(p.char) : '<span class="q">?</span>'}</div>
-      <div class="hud-info">
-        <span class="hud-name"></span>
-        <span class="hud-score">${p ? p.score : 0}<small> PASS</small></span>
-      </div>`;
+    if (!el.dataset.built) {
+      el.dataset.built = '1';
+      el.innerHTML = `
+        <div class="hud-avatar"></div>
+        <div class="hud-info"><span class="hud-name"></span><span class="hud-score"></span></div>
+        <div class="hud-bubble"></div>`;
+    }
+    const avatar = $('.hud-avatar', el);
+    const charKey = p ? p.char : '';
+    if (avatar.dataset.char !== charKey) {
+      avatar.dataset.char = charKey;
+      avatar.innerHTML = p ? charSvg(p.char) : '<span class="q">?</span>';
+    }
     $('.hud-name', el).textContent = p ? `${p.name}${p.isBot ? ' 🤖' : ''}` : emptyLabel;
+    $('.hud-score', el).innerHTML = `${p ? p.score : 0}<small> PASS</small>`;
     el.classList.toggle('offline', !!p && !p.connected);
   }
 
@@ -140,34 +158,46 @@ export class Game {
     }
   }
 
+  setReel(b, k, text) {
+    clearTimeout(b.spin[k]);
+    const strip = b.r[k];
+    strip.style.transition = 'none';
+    strip.style.transform = '';
+    strip.replaceChildren(reelItem(text));
+    this.slotOf(b, k).classList.remove('spinning');
+  }
+
+  slotOf(b, k) {
+    return b.r[`slot${k[0].toUpperCase()}${k.slice(1)}`];
+  }
+
   setTopicText(b, topic) {
-    for (const k of ['topic', 'length', 'keyword']) {
-      clearInterval(b.spin[k]);
-      b.r[k].classList.remove('spinning');
-      b.r[k].textContent = topic ? topic[k] : '???';
-    }
+    for (const k of ['topic', 'length', 'keyword']) this.setReel(b, k, topic ? topic[k] : '???');
     b.r.banned.textContent = topic ? `금지어: ${topic.banned.join(', ')}` : '';
     if (b.isMe) this.checkBanned();
   }
 
+  // 슬롯머신처럼 릴이 돌다가 차례로 멈춘다
   roulette(b, topic) {
     b.r.banned.textContent = `금지어: ${topic.banned.join(', ')}`;
     ['topic', 'length', 'keyword'].forEach((k, i) => {
-      const el = b.r[k];
+      const strip = b.r[k];
       const pool = ROULETTE[k];
-      const stopAt = performance.now() + 600 + i * 300;
-      clearInterval(b.spin[k]);
-      el.classList.add('spinning');
-      b.spin[k] = setInterval(() => {
-        if (performance.now() < stopAt) {
-          el.textContent = pool[Math.floor(Math.random() * pool.length)];
-          return;
-        }
-        clearInterval(b.spin[k]);
-        el.textContent = topic[k];
-        el.classList.remove('spinning');
-        replay(el, 'landed');
-      }, 60);
+      const ms = 1100 + i * 450;
+      const spins = Array.from({ length: REEL_SPINS + i * 4 }, () => pool[Math.floor(Math.random() * pool.length)]);
+      clearTimeout(b.spin[k]);
+      strip.style.transition = 'none';
+      strip.style.transform = 'translateY(0)';
+      strip.replaceChildren(...[...spins, topic[k]].map(reelItem));
+      void strip.offsetHeight;
+      strip.style.transition = `transform ${ms}ms cubic-bezier(0.15, 0.7, 0.25, 1.06)`;
+      strip.style.transform = `translateY(-${spins.length * 1.5}em)`;
+      const slot = this.slotOf(b, k);
+      slot.classList.add('spinning');
+      b.spin[k] = setTimeout(() => {
+        this.setReel(b, k, topic[k]);
+        replay(slot, 'landed');
+      }, ms + 40);
     });
     if (b.isMe) this.checkBanned();
   }
@@ -280,20 +310,28 @@ export class Game {
 
   // ---------- 캐릭터: 말풍선 / 채팅 ----------
 
+  // 캐릭터 대사는 상단 HUD의 내 이름 옆에 말풍선으로 띄운다
   say(b, text) {
-    const el = b.r.bubble;
+    const el = $(`${b.isMe ? '#hud-me' : '#hud-opp'} .hud-bubble`);
+    if (!el) return;
     el.textContent = text;
     replay(el, 'show');
     clearTimeout(b.timers.bubble);
-    b.timers.bubble = setTimeout(() => el.classList.remove('show'), 3000);
+    b.timers.bubble = setTimeout(() => el.classList.remove('show'), 3200);
+  }
+
+  openChat() {
+    const { r } = this.boards.me;
+    r.chatForm.hidden = false;
+    r.chatInput.focus();
   }
 
   bindChat() {
     const { r } = this.boards.me;
     r.avatar.addEventListener('click', () => {
       replay(r.avatar, 'hop');
-      r.chatForm.hidden = !r.chatForm.hidden;
-      if (!r.chatForm.hidden) r.chatInput.focus();
+      if (r.chatForm.hidden) this.openChat();
+      else r.chatForm.hidden = true;
     });
     this.boards.opp.r.avatar.addEventListener('click', () => replay(this.boards.opp.r.avatar, 'hop'));
     r.chatInput.addEventListener('keydown', (e) => {

@@ -197,6 +197,13 @@ b { font-weight: 700; }
 .scene .f4 { fill: var(--c4); }
 .scene .f5 { fill: var(--c5); }
 .scene .fi { fill: var(--ink); }
+.scene .o1 { opacity: 0.1; } .scene .o9 { opacity: 0.9; }
+.scene .twinkle { animation: twinkle 2.4s steps(2) infinite; }
+@keyframes twinkle { 50% { opacity: 0.15; } }
+.scene .drift { animation: drift 14s linear infinite; }
+.scene .drift.slow { animation-duration: 32s; }
+.scene .drift.fast { animation-duration: 5s; animation-delay: -2s; }
+@keyframes drift { from { transform: translateX(-40px); } to { transform: translateX(240px); } }
 .scene .o2 { opacity: 0.2; } .scene .o3 { opacity: 0.3; } .scene .o4 { opacity: 0.4; } .scene .o5 { opacity: 0.5; }
 .scene .o6 { opacity: 0.6; } .scene .o7 { opacity: 0.7; } .scene .o8 { opacity: 0.8; }
 .scene .g2, .scene .g3, .scene .g5 { animation: glow 1.6s steps(2) infinite; }
@@ -292,39 +299,72 @@ b { font-weight: 700; }
 .streak { font-size: 0.8rem; padding: 2px 8px; background: var(--line); color: var(--muted); }
 .streak.hot { background: var(--danger); color: #fff; animation: blink 0.5s steps(2) infinite; }
 
-/* 주제문 룰렛: 팔레트 줄무늬 블록 */
+/* 주제문 룰렛: 팔레트 줄무늬 블록 + 슬롯머신 릴 */
 .topic-card { display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 10px; padding: 0 3px; }
 .slot { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 7px 10px; margin: 3px 0; box-shadow: var(--frame-sm); }
 .slot-topic { background: var(--ink); color: var(--c1); }
 .slot-length { background: var(--c2); color: var(--ink); }
 .slot-keyword { background: var(--accent); color: var(--on-accent); }
 .slot-label { font-size: 0.7rem; opacity: 0.8; }
-.slot-value { font-family: var(--font-big); font-size: 1.1rem; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.slot-topic .slot-value { font-size: 1.25rem; }
-.slot-value.spinning { opacity: 0.5; }
-.slot-value.landed { animation: pop 0.25s steps(3); }
+.reel { display: block; height: 1.5em; overflow: hidden; font-family: var(--font-big); font-size: 1.1rem; }
+.slot-topic .reel { font-size: 1.25rem; }
+.reel-strip { display: block; will-change: transform; }
+.reel-item { display: block; height: 1.5em; line-height: 1.5em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slot.spinning { animation: slot-spin 0.18s steps(2) infinite; }
+.slot.spinning .reel { -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent); mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent); }
+@keyframes slot-spin { 50% { box-shadow: 0 -3px 0 0 var(--accent-2), 0 3px 0 0 var(--accent-2), -3px 0 0 0 var(--accent-2), 3px 0 0 0 var(--accent-2); } }
+.slot.landed { animation: landed 0.35s steps(3); }
+@keyframes landed { 0% { transform: scale(1.12); filter: brightness(1.8); } 100% { transform: none; filter: none; } }
 .banned { margin: 0 3px; font-size: 0.78rem; color: #c8003e; min-height: 1em; }
 .banned:not(:empty)::before { content: '🚫 '; }
 
-/* 답변창 */
-.scroll {
-  position: relative; flex: 1; min-height: 100px; overflow-y: auto; margin: 0 3px;
-  padding: 12px 14px; line-height: 1.85;
-  background: var(--paper); box-shadow: var(--frame-sm), inset 0 3px 0 0 rgba(0, 0, 0, 0.06);
+/* 무대: 배경 + 캐릭터(왼쪽) + 캐릭터가 말하는 큰 말풍선 */
+.frame {
+  --av: 96px;
+  --av-x: max(14px, 5%);
+  position: relative; flex: 1; min-height: 280px; overflow: hidden; margin: 0 3px;
+  background: var(--c5); box-shadow: var(--frame-sm);
 }
+.stage-scene, .stage-scene .scene { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+.speech-wrap {
+  position: absolute; z-index: 2;
+  right: 14px; left: calc(var(--av-x) + var(--av) + 18px);
+  bottom: calc(var(--floor, 56px) + 44px);
+  /* 위쪽 하늘(달·태양·성)이 보이도록 높이를 제한 */
+  height: clamp(120px, calc(100% - var(--floor, 56px) - 58px), 300px);
+}
+.speech {
+  position: absolute; inset: 0; overflow-y: auto;
+  padding: 12px 14px; line-height: 1.8;
+  background: #fffef7; color: var(--ink); box-shadow: var(--frame-sm), 0 6px 0 0 rgba(0, 0, 0, 0.3);
+}
+/* 계단 모양 말꼬리 (캐릭터 쪽) */
+.speech-tail {
+  position: absolute; left: -15px; bottom: 12px; width: 15px; height: 15px; background: var(--ink);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%, 0 80%, 20% 80%, 20% 60%, 40% 60%, 40% 40%, 60% 40%, 60% 20%, 80% 20%, 80% 0);
+}
+.speech-tail::after {
+  content: ''; position: absolute; right: 0; bottom: 3px; width: 11px; height: 9px; background: #fffef7;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%, 0 67%, 33% 67%, 33% 33%, 67% 33%, 67% 0);
+}
+.board.opp .speech-wrap { left: 14px; right: calc(var(--av-x) + var(--av) + 18px); }
+.board.opp .speech-tail { left: auto; right: -15px; transform: scaleX(-1); }
+
 .prompt-line {
   margin: 0 0 8px; padding: 5px 10px; width: fit-content; max-width: 100%;
-  font-size: 0.85rem; line-height: 1.5; word-break: break-all;
+  font-size: 0.82rem; line-height: 1.5; word-break: break-all;
   background: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 .prompt-line:empty { background: none; padding: 0; color: var(--muted); }
-.prompt-line:empty::before { content: '아직 보낸 프롬프트가 없어요'; }
-.answer { white-space: pre-wrap; }
+.prompt-line:empty::before { content: '프롬프트를 보내면 내 캐릭터가 여기서 답해요'; }
+.board.opp .prompt-line:empty::before { content: '상대 캐릭터의 답변이 여기 떠요'; }
+.answer { white-space: pre-wrap; font-size: 1.02rem; }
 .answer.streaming::after {
   content: ''; display: inline-block; width: 9px; height: 1em; margin-left: 2px; vertical-align: -2px;
   background: var(--accent); animation: blink 0.6s steps(2) infinite;
 }
-.board.busy .answer:empty::before { content: 'AI가 생각하는 중…'; color: var(--muted); }
+.board.busy .answer:empty::before { content: '음… 생각 중'; color: var(--muted); }
 
 /* 평가 AI 형광펜 */
 .line {
@@ -334,10 +374,12 @@ b { font-weight: 700; }
 .line.read { background-size: 100% 70%; }
 @keyframes sweep { to { background-size: 100% 70%; } }
 .judge-tag {
-  display: none; margin: -4px 3px 0; font-size: 0.8rem; color: var(--accent);
+  display: none; position: sticky; top: -12px; z-index: 1;
+  margin: -12px -14px 10px; padding: 4px 14px; font-size: 0.8rem;
+  background: var(--accent); color: var(--on-accent);
 }
 .board.judging .judge-tag { display: block; }
-.board.judging .scroll { box-shadow: 0 -3px 0 0 var(--accent), 0 3px 0 0 var(--accent), -3px 0 0 0 var(--accent), 3px 0 0 0 var(--accent); }
+.board.judging .speech { box-shadow: 0 -3px 0 0 var(--accent), 0 3px 0 0 var(--accent), -3px 0 0 0 var(--accent), 3px 0 0 0 var(--accent), 0 6px 0 0 rgba(0, 0, 0, 0.3); }
 
 .stamp {
   position: sticky; bottom: 0; margin: 10px 3px 3px auto; width: fit-content; max-width: 240px;
@@ -372,64 +414,45 @@ b { font-weight: 700; }
 .flash.retry .bsod-hint { opacity: 0.7; }
 @keyframes flash { 0%, 92% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
 
-/* 무대 */
-.stage {
-  position: relative; height: 120px; flex: none; overflow: hidden; margin: 0 3px;
-  background: var(--c5); box-shadow: var(--frame-sm);
-}
-.stage-scene, .stage-scene .scene { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* 캐릭터 */
 .avatar {
-  position: absolute; left: 50%; bottom: 40px; z-index: 1; margin-left: -32px;
-  width: 64px; height: 64px; padding: 0; border: 0; background: none; cursor: pointer;
+  position: absolute; left: var(--av-x); bottom: var(--floor, 56px); z-index: 3;
+  width: var(--av); height: var(--av); padding: 0; border: 0; background: none; cursor: pointer;
   animation: bob 1s steps(2) infinite;
   filter: drop-shadow(3px 0 0 var(--c1)) drop-shadow(-3px 0 0 var(--c1)) drop-shadow(0 3px 0 var(--c1)) drop-shadow(0 -3px 0 var(--c1));
 }
-.board.opp .avatar { cursor: default; }
-.avatar .sprite { width: 64px; height: 64px; }
+.board.opp .avatar { left: auto; right: var(--av-x); cursor: default; }
+.avatar .sprite { width: 100%; height: 100%; }
 .board.opp .avatar .sprite { transform: scaleX(-1); }
 .avatar:empty { display: none; }
 .board.busy .avatar::after {
-  content: '…'; position: absolute; left: -24px; top: -14px; font-family: var(--font-big);
-  padding: 0 4px; background: var(--paper); color: var(--ink); box-shadow: var(--frame-sm);
+  content: '…'; position: absolute; left: 50%; top: -26px; margin-left: -14px; font-family: var(--font-big);
+  padding: 0 6px; background: #fff; color: var(--ink); box-shadow: var(--frame-sm);
   animation: bob 0.6s steps(2) infinite;
 }
 .avatar.hop { animation: hop 0.3s steps(3); }
 .avatar.cheer { animation: cheer 0.5s steps(2) 4; }
 .avatar.cry { animation: cry 0.3s steps(2) 6; }
 .avatar.cry::before, .avatar.cry::after {
-  content: ''; position: absolute; top: 34px; width: 4px; height: 8px; background: #6ec6ff;
+  content: ''; position: absolute; top: 46%; width: 5px; height: 10px; background: #6ec6ff;
   animation: tear 0.5s steps(3) infinite;
 }
-.avatar.cry::before { left: 14px; }
-.avatar.cry::after { left: 44px; animation-delay: 0.25s; }
+.avatar.cry::before { left: 22%; }
+.avatar.cry::after { left: 68%; animation-delay: 0.25s; }
 @keyframes bob { 50% { translate: 0 -4px; } }
-@keyframes hop { 50% { translate: 0 -12px; } }
-@keyframes cheer { 50% { translate: 0 -24px; } }
+@keyframes hop { 50% { translate: 0 -14px; } }
+@keyframes cheer { 50% { translate: 0 -28px; } }
 @keyframes cry { 50% { translate: 0 4px; } }
-@keyframes tear { from { transform: translateY(0); opacity: 1; } to { transform: translateY(20px); opacity: 0; } }
+@keyframes tear { from { transform: translateY(0); opacity: 1; } to { transform: translateY(22px); opacity: 0; } }
 @keyframes pop { from { transform: scale(1.5); } }
 @keyframes shake { 25% { translate: -6px 0; } 75% { translate: 6px 0; } }
 
-.bubble {
-  position: absolute; left: calc(50% + 40px); bottom: 74px; z-index: 3; max-width: 60%;
-  padding: 5px 10px; font-size: 0.85rem; line-height: 1.4;
-  background: #fff; color: var(--ink); box-shadow: var(--frame-sm);
-  opacity: 0; pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.bubble::after {
-  content: ''; position: absolute; left: -9px; bottom: 2px; width: 9px; height: 6px; background: var(--ink);
-  clip-path: polygon(0 100%, 100% 0, 100% 100%);
-}
-.bubble.show { animation: bubble 3s steps(1) forwards; opacity: 1; }
-@keyframes bubble { 0% { transform: translateY(6px); } 5% { transform: none; } 95% { opacity: 1; } 100% { opacity: 0; } }
-.board.opp .bubble { left: auto; right: calc(50% + 40px); }
-.board.opp .bubble::after { left: auto; right: -9px; clip-path: polygon(0 0, 100% 100%, 0 100%); }
-
 .emote-pop {
-  position: absolute; left: calc(50% - 60px); bottom: 70px; z-index: 2;
+  position: absolute; left: calc(var(--av-x) + var(--av) - 14px); bottom: calc(var(--floor, 56px) + var(--av) - 6px); z-index: 4;
   font-size: 26px; line-height: 1; opacity: 0; pointer-events: none;
   background: #fff; padding: 4px 6px; box-shadow: var(--frame-sm);
 }
+.board.opp .emote-pop { left: auto; right: calc(var(--av-x) + var(--av) - 14px); }
 .emote-pop.show { animation: emote 1.6s steps(8) forwards; }
 @keyframes emote {
   0% { opacity: 0; transform: translateY(10px); }
@@ -437,15 +460,36 @@ b { font-weight: 700; }
   100% { opacity: 0; transform: translateY(-12px); }
 }
 .typing {
-  position: absolute; left: 8px; top: 8px; z-index: 2; font-size: 0.75rem; padding: 2px 8px;
-  background: var(--paper); color: var(--ink); opacity: 0;
+  position: absolute; left: var(--av-x); bottom: calc(var(--floor, 56px) + var(--av) + 8px); z-index: 4;
+  font-size: 0.75rem; padding: 2px 8px; background: #fff; color: var(--ink); box-shadow: var(--frame-sm); opacity: 0;
 }
+.board.opp .typing { left: auto; right: var(--av-x); }
 .typing.show { opacity: 1; }
-.chat-form { position: absolute; left: 8px; right: 8px; top: 8px; z-index: 4; }
+.chat-form {
+  position: absolute; z-index: 5; left: var(--av-x); bottom: calc(var(--floor, 56px) + var(--av) + 10px);
+  width: min(280px, calc(100% - 28px));
+}
 .chat-form input {
-  width: 100%; padding: 6px 10px; border: 0; outline: none;
+  width: 100%; padding: 7px 10px; border: 0; outline: none;
   background: #fff; color: var(--ink); box-shadow: 0 -3px 0 0 var(--accent), 0 3px 0 0 var(--accent), -3px 0 0 0 var(--accent), 3px 0 0 0 var(--accent);
 }
+
+/* 상단 HUD 말풍선 (캐릭터 대사) */
+.hud-player { position: relative; }
+.hud-bubble {
+  position: relative; max-width: 240px; margin-left: 16px; padding: 6px 12px;
+  font-size: 0.9rem; line-height: 1.4; background: #fff; color: var(--ink); box-shadow: var(--frame-sm);
+  visibility: hidden; opacity: 0;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-all;
+}
+.hud-bubble::before {
+  content: ''; position: absolute; left: -12px; top: 50%; margin-top: -5px; width: 9px; height: 10px; background: var(--ink);
+  clip-path: polygon(100% 0, 100% 100%, 0 50%);
+}
+.hud-player.opp .hud-bubble { margin-left: 0; margin-right: 16px; }
+.hud-player.opp .hud-bubble::before { left: auto; right: -12px; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.hud-bubble.show { visibility: visible; animation: bubble 3.2s steps(1) forwards; }
+@keyframes bubble { 0% { opacity: 1; transform: translateY(4px); } 4% { transform: none; } 95% { opacity: 1; } 100% { opacity: 0; } }
 
 /* 프롬프트 입력 */
 .prompt-box { display: flex; flex-direction: column; gap: 8px; padding: 0 3px; }
@@ -598,12 +642,16 @@ body.shake { animation: shake 0.12s steps(2) 5; }
   #side-me { order: 3; }
   .vs { display: none; }
   .emotes { grid-template-columns: repeat(6, 1fr); gap: 6px; }
-  .board.opp .stage { display: none; }
-  .board.opp .scroll { max-height: 140px; }
-  .board.me .scroll { min-height: 140px; }
+  .frame { --av: 64px; min-height: 260px; }
+  .board.opp .frame { min-height: 200px; }
   .board.opp .stamp { position: static; transform: none; flex-direction: row; gap: 8px; max-width: none; }
   .board.opp .stamp b { font-size: 1.1rem; }
-  .slot-value, .slot-topic .slot-value { font-size: 0.95rem; }
+  .reel, .slot-topic .reel { font-size: 0.95rem; }
+  /* 좁은 화면에서는 HUD 말풍선을 아바타 아래로 띄운다 */
+  .hud-bubble { position: absolute; top: calc(100% + 10px); left: 0; margin: 0; z-index: 20; max-width: 60vw; }
+  .hud-bubble::before { left: 14px; top: -10px; margin: 0; width: 10px; height: 9px; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+  .hud-player.opp .hud-bubble { left: auto; right: 0; margin: 0; }
+  .hud-player.opp .hud-bubble::before { left: auto; right: 14px; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
   .finale-actions { grid-template-columns: 1fr; }
 }
 

@@ -68,7 +68,7 @@ socket.on('room:state', (room) => {
     setTimeout(() => {
       if (session.room !== room.code) return;
       coach.run(GAME_STEPS, {
-        actions: { example: () => game.fillPrompt(EXAMPLE_PROMPT) },
+        actions: { example: () => game.fillPrompt(EXAMPLE_PROMPT), openChat: () => game.openChat() },
         onDone: () => {
           try {
             localStorage.setItem('promptame.tutorialDone', '1');

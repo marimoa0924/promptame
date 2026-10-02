@@ -34,8 +34,8 @@ export const GAME_STEPS = [
     action: 'example',
   },
   {
-    target: '.board.me .scroll',
-    text: 'AI가 한 글자씩 답하고, 끝나면 <b>평가 AI</b>가 형광펜으로 한 줄씩 읽으며 채점해요. 내 프롬프트가 어떤 답을 만들었는지 같이 읽어 보세요!',
+    target: '.board.me .frame',
+    text: '내 캐릭터가 말풍선으로 AI 답변을 한 글자씩 말하고, 끝나면 <b>평가 AI</b>가 형광펜으로 한 줄씩 읽으며 채점해요. 같이 읽어 보세요!',
     waitFor: 'result',
   },
   {
@@ -43,8 +43,9 @@ export const GAME_STEPS = [
     text: '시간은 <b>체력바</b>처럼 줄어요. 10초 남으면 카운트다운! 시간 안에 더 많이 PASS한 쪽이 승리해요.',
   },
   {
-    target: '.board.me .avatar',
-    text: '내 캐릭터를 눌러 <b>말을 걸어</b> 보세요. 상대 화면에도 말풍선이 떠요!',
+    target: ['.board.me .avatar', '.board.me .chat-form'],
+    text: '캐릭터를 누르면 <b>대사 입력칸</b>이 열려요. 할 말을 쓰고 Enter를 누르면 위쪽 내 이름 옆에 말풍선이 떠요. 상대 화면에도 보여요!',
+    enter: 'openChat',
     waitFor: 'chat',
     next: '건너뛰기',
   },
@@ -103,6 +104,7 @@ class Coach {
     this.r.action.hidden = !s.action;
     this.r.action.textContent = s.action === 'example' ? '✎ 예시 넣기' : '';
     this.hole.hidden = this.tip.hidden = false;
+    if (s.enter) this.actions[s.enter]?.();
     this.place();
   }
 
@@ -123,17 +125,31 @@ class Coach {
     requestAnimationFrame(this.loop);
   }
 
+  // 여러 요소를 가리키면 전부 감싸는 하나의 박스로 강조한다
+  targetRect() {
+    const sels = [].concat(this.step?.target ?? []);
+    const rects = sels
+      .flatMap((sel) => [...document.querySelectorAll(sel)])
+      .filter((el) => el.getClientRects().length)
+      .map((el) => el.getBoundingClientRect());
+    if (!rects.length) return null;
+    const left = Math.min(...rects.map((r) => r.left));
+    const top = Math.min(...rects.map((r) => r.top));
+    const right = Math.max(...rects.map((r) => r.right));
+    const bottom = Math.max(...rects.map((r) => r.bottom));
+    return { left, top, right, bottom, width: right - left, height: bottom - top };
+  }
+
   place() {
-    const el = this.step && document.querySelector(this.step.target);
+    const r = this.targetRect();
     const tip = this.tip;
     const pad = 8;
-    if (!el || !el.getClientRects().length) {
+    if (!r) {
       this.hole.style.cssText = 'left:50%;top:50%;width:0;height:0';
       tip.style.left = `${Math.max(16, (innerWidth - tip.offsetWidth) / 2)}px`;
       tip.style.top = `${Math.max(16, (innerHeight - tip.offsetHeight) / 2)}px`;
       return;
     }
-    const r = el.getBoundingClientRect();
     Object.assign(this.hole.style, {
       left: `${r.left - pad}px`,
       top: `${r.top - pad}px`,

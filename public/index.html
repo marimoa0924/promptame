@@ -138,20 +138,23 @@
         <span class="streak" data-ref="streak" title="연속 원샷 PASS (3번이면 상대 얼림)"></span>
       </header>
       <div class="topic-card">
-        <div class="slot slot-topic"><span class="slot-label">주제문</span><span class="slot-value" data-ref="topic">???</span></div>
-        <div class="slot slot-length"><span class="slot-label">분량</span><span class="slot-value" data-ref="length">???</span></div>
-        <div class="slot slot-keyword"><span class="slot-label">필수 키워드</span><span class="slot-value" data-ref="keyword">???</span></div>
+        <div class="slot slot-topic" data-ref="slotTopic"><span class="slot-label">주제문</span><span class="reel"><span class="reel-strip" data-ref="topic"></span></span></div>
+        <div class="slot slot-length" data-ref="slotLength"><span class="slot-label">분량</span><span class="reel"><span class="reel-strip" data-ref="length"></span></span></div>
+        <div class="slot slot-keyword" data-ref="slotKeyword"><span class="slot-label">필수 키워드</span><span class="reel"><span class="reel-strip" data-ref="keyword"></span></span></div>
       </div>
       <p class="banned" data-ref="banned"></p>
-      <div class="scroll" data-ref="scroll">
-        <p class="prompt-line" data-ref="prompt"></p>
-        <div class="answer" data-ref="answer"></div>
-        <div class="stamp" data-ref="stamp"></div>
-      </div>
-      <p class="judge-tag" data-ref="judge">🔍 평가 AI가 읽는 중<span class="dots"></span></p>
-      <div class="stage">
+      <!-- 무대: 배경 + 캐릭터 + 캐릭터가 말하는 AI 답변 말풍선 -->
+      <div class="frame" data-ref="frame">
         <div class="stage-scene" data-ref="scene"></div>
-        <div class="bubble" data-ref="bubble"></div>
+        <div class="speech-wrap">
+          <div class="speech" data-ref="scroll">
+            <p class="judge-tag">🔍 평가 AI가 읽는 중<span class="dots"></span></p>
+            <p class="prompt-line" data-ref="prompt"></p>
+            <div class="answer" data-ref="answer"></div>
+            <div class="stamp" data-ref="stamp"></div>
+          </div>
+          <span class="speech-tail"></span>
+        </div>
         <div class="emote-pop" data-ref="emote"></div>
         <button class="avatar" type="button" data-ref="avatar" title="눌러서 말 걸기"></button>
         <div class="typing" data-ref="typing"></div>
