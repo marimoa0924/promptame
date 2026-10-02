@@ -1,0 +1,19 @@
+{
+  "name": "promptame",
+  "version": "0.1.0",
+  "private": true,
+  "description": "프롬프트 배틀 - 실시간 1:1 프롬프트 대결 게임",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.1"
+  }
+}
