@@ -600,13 +600,12 @@ body.shake { animation: shake 0.12s steps(2) 5; }
 .crowd { display: flex; justify-content: center; align-items: flex-end; gap: 10px; height: 96px; margin: 14px 0 6px; }
 .crowd-member .sprite { width: 56px; height: 56px; }
 .crowd-member.star .sprite { width: 80px; height: 80px; }
-.crowd-member.cheer { animation: cheer 0.5s steps(2) infinite; }
-.crowd-member.cry { animation: pound 0.4s steps(2) infinite; filter: saturate(0.6); }
-.crowd-member.bob { animation: bob 1s steps(2) infinite; }
+/* 결과 화면의 캐릭터는 움직이지 않고 가만히 서 있는다(계속 뛰면 화면이 흔들려 보인다) */
+.crowd-member.cry { filter: saturate(0.6); }
 .crowd-member { position: relative; }
 .crowd-member.cry::after {
   content: ''; position: absolute; left: 30%; top: 45%; width: 4px; height: 8px; background: #6ec6ff;
-  box-shadow: 22px 2px 0 #6ec6ff; animation: tear 0.5s steps(3) infinite;
+  box-shadow: 22px 2px 0 #6ec6ff;
 }
 @keyframes pound { 0% { transform: translateY(0) rotate(0); } 50% { transform: translateY(8px) rotate(-6deg); } }
 .stats { display: grid; gap: 8px; margin: 14px 0; padding: 0 3px; }
