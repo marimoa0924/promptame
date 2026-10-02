@@ -1,6 +1,7 @@
 import { socket, session, request } from './net.js';
 import { $, showScreen, toast, confirmDialog } from './ui.js';
 import { initLobby } from './lobby.js';
+import { initRanking } from './ranking.js';
 import { Game } from './game.js';
 import { Finale } from './finale.js';
 import { applyTheme } from './maps.js';
@@ -13,6 +14,8 @@ applyTheme(document.body, 'lobby');
 const game = new Game();
 const finale = new Finale({ onLeave: leaveRoom, onRematch: rematch });
 const lobby = initLobby({ onEnterRoom: enterRoom });
+const ranking = initRanking();
+ranking.refresh();
 let tutorialStarted = false;
 
 function enterRoom(room) {
@@ -28,6 +31,7 @@ function enterRoom(room) {
 }
 
 function toLobby() {
+  ranking.refresh(); // 방금 끝난 판의 랭크 점수를 반영한다
   session.room = null;
   coach.stop();
   finale.hide();

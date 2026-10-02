@@ -636,3 +636,16 @@ body.shake { animation: shake 0.12s steps(2) 5; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition: none !important; }
 }
+
+/* 랭킹 */
+.my-rank { margin: 6px 0 0; text-align: center; font-weight: 700; min-height: 1.4em; }
+.ranking-card { width: min(520px, 94vw); max-height: 86vh; display: flex; flex-direction: column; text-align: left; }
+.ranking-me { margin: 0 0 10px; font-weight: 700; }
+.ranking-list { list-style: none; margin: 0 0 10px; padding: 0; overflow-y: auto; flex: 1; }
+.ranking-list li { display: grid; grid-template-columns: 2.2em 1fr auto; gap: 8px; align-items: center; padding: 6px 8px; border-bottom: 2px dashed color-mix(in srgb, var(--ink) 25%, transparent); }
+.ranking-list li.me { background: color-mix(in srgb, var(--accent-2) 55%, transparent); }
+.ranking-list .rk { font-weight: 700; text-align: center; }
+.ranking-list .rk-name small, .ranking-list .rk-score small { display: block; opacity: 0.7; font-size: 0.75em; }
+.ranking-list .rk-score { text-align: right; font-weight: 700; }
+.ranking-empty { text-align: center; padding: 18px 0; opacity: 0.7; }
+.ranking-rules { font-size: 0.75rem; margin: 0 0 12px; }

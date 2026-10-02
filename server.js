@@ -14,6 +14,9 @@ import { Server } from 'socket.io';
 import { Room } from './game/room.js';
 import { createAIFromEnv, listModels } from './game/gemini.js';
 import { checkNickname, nicknameError } from './nickname.js';
+import { createJsonStore } from './game/jsonStore.js';
+import { createSeen } from './game/seen.js';
+import { createRanking } from './game/ranking.js';
 
 const PORT = Number(process.env.PORT) || 3000;
 const CHARACTERS = ['cat', 'pigeon', 'dog', 'otaku'];
@@ -21,6 +24,13 @@ const MAPS = ['east', 'future', 'medieval', 'space'];
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 const ai = createAIFromEnv();
+// 랭킹과 본 문제 기록은 파일에 남긴다 (DATA_FILE로 위치 변경, 기본 ./store.json)
+const store = createJsonStore(process.env.DATA_FILE || './store.json');
+process.on('exit', () => store.flush());
+for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => process.exit(0));
+const seen = createSeen(store);
+const ranking = createRanking(store);
+const validDevice = (d) => (typeof d === 'string' && d.length >= 8 && d.length <= 64 ? d : null);
 const app = express();
 app.get('/favicon.ico', (_req, res) => res.status(204).end());
 app.use(express.static('public'));
@@ -50,10 +60,11 @@ const DEFAULT_NAME = '익명의 고수';
 function cleanProfile(profile = {}) {
   const raw = String(profile.name ?? '').trim();
   const char = pick(profile.char, CHARACTERS, 'cat');
-  if (!raw) return { ok: true, profile: { name: DEFAULT_NAME, char } };
+  const device = validDevice(profile.device);
+  if (!raw) return { ok: true, profile: { name: DEFAULT_NAME, char, device } };
   const nick = checkNickname(raw);
   if (!nick.ok) return { ok: false, error: nicknameError(nick.code) };
-  return { ok: true, profile: { name: nick.name, char } };
+  return { ok: true, profile: { name: nick.name, char, device } };
 }
 
 function cleanSettings(s = {}) {
@@ -81,7 +92,7 @@ io.on('connection', (socket) => {
     if (!who.ok) return reply(ack, who);
     currentRoom()?.leave(socket.data.playerId);
     const code = newCode();
-    const room = new Room(io, code, cleanSettings(settings), (c) => rooms.delete(c), ai);
+    const room = new Room(io, code, cleanSettings(settings), (c) => rooms.delete(c), ai, {}, { seen, ranking });
     rooms.set(code, room);
     reply(ack, room.join(socket, playerId, who.profile));
   });
@@ -114,6 +125,11 @@ io.on('connection', (socket) => {
     const room = currentRoom();
     if (!room) return reply(ack, { ok: false, error: '방에 들어가 있지 않아요' });
     reply(ack, room.addBot());
+  });
+
+  // 랭킹 상위 목록과 내 순위
+  socket.on('ranking:get', ({ device } = {}, ack) => {
+    reply(ack, { ok: true, top: ranking.top(20), me: ranking.me(validDevice(device)) });
   });
 
   socket.on('prompt:submit', ({ text } = {}, ack) => {

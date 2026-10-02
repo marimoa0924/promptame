@@ -88,6 +88,12 @@ export class Finale {
     ];
     if (opp) rows.push([`${opp.name}`, `${opp.score} PASS`]);
     rows.push(['결과', { win: '승리', lose: '패배', draw: '무승부' }[outcome]]);
+    const rk = result.ranking?.[meId];
+    if (rk) {
+      rows.push(rk.counted
+        ? ['랭크 점수', `${rk.delta >= 0 ? '+' : ''}${rk.delta} → ${rk.rp} RP (${rk.tier.name})`]
+        : ['랭크 점수', `반영 안 됨 · ${rk.note}`]);
+    }
     r.stats.innerHTML = rows.map(([k]) => `<div><dt></dt><dd></dd></div>`).join('');
     [...r.stats.children].forEach((row, i) => {
       row.querySelector('dt').textContent = rows[i][0];

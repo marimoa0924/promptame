@@ -30,11 +30,18 @@ function stored(storage, key) {
 const pidStore = stored(sessionStorage, 'promptame.pid');
 const roomStore = stored(sessionStorage, 'promptame.room');
 const profileStore = stored(localStorage, 'promptame.profile');
+// 기기 ID: 탭을 닫아도 남는다. 랭킹과 '본 문제' 기록이 이 값을 기준으로 쌓인다. (탭마다 다른 playerId와는 별개)
+const deviceStore = stored(localStorage, 'promptame.device');
+if (!deviceStore.get()) deviceStore.set(uid());
+const deviceId = () => deviceStore.get() ?? 'dev-unknown-0000';
 
 if (!pidStore.get()) pidStore.set(uid());
 
 export const session = {
   playerId: pidStore.get() ?? uid(),
+  get device() {
+    return deviceId();
+  },
   get room() {
     return roomStore.get();
   },
@@ -43,9 +50,9 @@ export const session = {
   },
   get profile() {
     try {
-      return { name: '', char: 'cat', ...JSON.parse(profileStore.get() ?? '{}') };
+      return { name: '', char: 'cat', ...JSON.parse(profileStore.get() ?? '{}'), device: deviceId() };
     } catch {
-      return { name: '', char: 'cat' };
+      return { name: '', char: 'cat', device: deviceId() };
     }
   },
   set profile(p) {

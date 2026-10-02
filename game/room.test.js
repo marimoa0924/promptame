@@ -2,6 +2,9 @@
 import test, { afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { Room } from './room.js';
+import { createJsonStore } from './jsonStore.js';
+import { createSeen } from './seen.js';
+import { createRanking } from './ranking.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const rooms = [];
@@ -26,19 +29,19 @@ function fakeAI({ delay = 0, status = 'OK' } = {}) {
   };
 }
 
-function setup({ settings = {}, ai = fakeAI(), timing = FAST } = {}) {
+function setup({ settings = {}, ai = fakeAI(), timing = FAST, hooks = {}, devices = {} } = {}) {
   const log = [];
   const io = {
     to: (target) => ({ emit: (ev, payload) => log.push({ target, ev, payload }) }),
     in: () => ({ socketsLeave() {} }),
   };
   let closed = false;
-  const room = new Room(io, 'ABCDEF', { title: 't', difficulty: 'easy', map: 'east', timeLimit: 60, promptLimit: 100, ...settings }, () => (closed = true), ai, timing);
+  const room = new Room(io, 'ABCDEF', { title: 't', difficulty: 'easy', map: 'east', timeLimit: 60, promptLimit: 100, ...settings }, () => (closed = true), ai, timing, hooks);
   rooms.push(room);
   const sock = (id) => ({ id, join() {}, data: {} });
   const A = sock('sA'), B = sock('sB');
-  room.join(A, 'pA', { name: '에이', char: 'cat' });
-  room.join(B, 'pB', { name: '비이', char: 'dog' });
+  room.join(A, 'pA', { name: '에이', char: 'cat', device: devices.pA });
+  room.join(B, 'pB', { name: '비이', char: 'dog', device: devices.pB });
   return { room, log, A, B, isClosed: () => closed, events: (ev) => log.filter((l) => l.ev === ev) };
 }
 // 조건이 될 때까지 기다린다 (고정 시간 대기는 느린 컴퓨터에서 흔들린다)
@@ -252,4 +255,60 @@ test('같은 playerId가 다시 들어오면 재접속으로 처리한다', asyn
   assert.equal(a.connected, true);
   assert.equal(a.socketId, 'sA2');
   assert.equal(c.room.join({ id: 'sC', join() {}, data: {} }, 'pC', { name: '씨', char: 'cat' }).ok, false); // 가득 참
+});
+
+test('이전 판에서 본 문제는 다음 방에서 먼저 피한다(기기 기준)', async () => {
+  const store = createJsonStore(null);
+  const hooks = { seen: createSeen(store), ranking: createRanking(store) };
+  const devices = { pA: 'devA-0001', pB: 'devB-0001' };
+  const c1 = setup({ hooks, devices, settings: { timeLimit: 0.6 } });
+  await playing(c1);
+  for (let i = 0; i < 3; i++) {
+    c1.room.submit('pA', 'XQZ1');
+    await answered(c1);
+  }
+  await until(() => c1.room.state === 'ended');
+  const seenA = hooks.seen.ids('devA-0001');
+  assert.equal(seenA.length, 4); // 풀어서 지나간 3문제와 지금 풀던 문제
+  assert.deepEqual(seenA, c1.room.sequence.slice(0, 4).map((x) => x.problem.id));
+  assert.equal(hooks.seen.ids('devB-0001').length, 1); // B는 첫 문제만 봤다
+
+  const c2 = setup({ hooks, devices, settings: { timeLimit: 5 } });
+  await playing(c2);
+  const first = c2.room.sequence.slice(0, 16).map((x) => x.problem.id); // 쉬움 20개 중 A가 본 4개를 뺀 16개가 먼저 나온다
+  assert.equal(first.filter((id) => seenA.includes(id)).length, 0);
+  assert.equal(new Set(first).size, 16);
+});
+
+test('판이 끝나면 랭크 점수가 정산되어 결과에 실린다', async () => {
+  const store = createJsonStore(null);
+  const hooks = { seen: createSeen(store), ranking: createRanking(store) };
+  const devices = { pA: 'devA-0001', pB: 'devB-0001' };
+  const c = setup({ hooks, devices, settings: { timeLimit: 0.6 } });
+  await playing(c);
+  for (let i = 0; i < 3; i++) {
+    c.room.submit('pA', 'XQZ1');
+    await answered(c);
+  }
+  await until(() => c.room.state === 'ended');
+  const end = c.events('game:end').at(-1).payload;
+  assert.equal(end.ranking.pA.counted, true);
+  assert.equal(end.ranking.pA.delta, 25);
+  assert.equal(end.ranking.pB.delta, 0); // 0점에서는 더 안 내려간다
+  assert.equal(hooks.ranking.me('devA-0001').rp, 25);
+  assert.equal(hooks.ranking.top()[0].name, '에이');
+  assert.equal(JSON.stringify(end.ranking).includes('devA-0001'), false); // 기기 ID는 안 나간다
+});
+
+test('튜토리얼과 연습봇 판은 랭킹에 반영하지 않는다', async () => {
+  const store = createJsonStore(null);
+  const hooks = { seen: createSeen(store), ranking: createRanking(store) };
+  const log = [];
+  const io = { to: () => ({ emit: (ev, p) => log.push({ ev, p }) }), in: () => ({ socketsLeave() {} }) };
+  const room = new Room(io, 'TUTOR2', { tutorial: true, difficulty: 'normal', timeLimit: 0.2, promptLimit: 150, map: 'east', title: 't' }, () => {}, fakeAI(), FAST, hooks);
+  rooms.push(room);
+  room.join({ id: 's', join() {}, data: {} }, 'pT', { name: '나', char: 'cat', device: 'devT-0001' });
+  await until(() => room.state === 'ended');
+  assert.equal(hooks.ranking.top().length, 0);
+  assert.deepEqual(hooks.seen.ids('devT-0001'), []);
 });

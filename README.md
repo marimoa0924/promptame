@@ -10,6 +10,8 @@ npm run dev        # http://localhost:3000 (서버 파일 수정 시 자동 재�
 npm test           # 판정 규칙·AI 클라이언트 테스트
 ```
 
+랭킹(RP)과 "이미 본 문제" 기록은 `store.json`에 저장돼요 (`DATA_FILE`로 위치 변경, git에는 안 올라가요).
+
 AI는 `GEMINI_API_KEY`가 있으면 Gemini를, 없으면 목업을 쓴다. 키는 프로젝트 폴더의 `.env` 파일에 넣는다 (git에 올라가지 않는다).
 
 ```bash
