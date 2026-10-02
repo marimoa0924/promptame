@@ -125,6 +125,7 @@ export class Game {
       this.hydrateLive(b, p.live);
     }
     r.name.textContent = `${p.name}${p.isBot ? ' 🤖' : ''}`;
+    if (b.isMe) r.tag.textContent = `나 · ${p.aiKind === 'gemini' ? 'Gemini' : '목 AI'}`;
     if (r.avatar.dataset.char !== p.char) {
       r.avatar.dataset.char = p.char;
       r.avatar.innerHTML = charSvg(p.char);

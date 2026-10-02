@@ -459,6 +459,7 @@ export class Room {
           busy: p.busy,
           frozenUntil: p.frozenUntil,
           frozenKind: p.frozenKind,
+          aiKind: this.aiFor(p).kind,
           topicIdx: p.topicIdx,
           topic: showTopic
             ? {
