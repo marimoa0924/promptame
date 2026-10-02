@@ -11,7 +11,7 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "smoke": "node scripts/smoke.mjs",
-    "build": "npm run build:problems",
+    "build": "node scripts/check-build.mjs",
     "build:problems": "node build-problems.mjs",
     "test": "node --test"
   },
