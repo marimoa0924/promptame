@@ -3,6 +3,20 @@
 import { socket, session, request } from './net.js';
 import { $, refs, charSvg, toast, copyText, formatTime, replay } from './ui.js';
 import { syncBgm, stopBgm } from './bgm.js';
+
+// 이모지 번호는 서버(game/room.js EMOTE_IDS)와 같다
+const EMOTES = {
+  thumbs: { icon: '👍', label: '좋아요' },
+  laugh: { icon: '😆', label: '웃겨요' },
+  cool: { icon: '😎', label: '멋져요' },
+  cry: { icon: '😭', label: '엉엉' },
+  think: { icon: '🤔', label: '고민 중' },
+  fire: { icon: '🔥', label: '불타오른다' },
+  clap: { icon: '👏', label: '박수' },
+  shock: { icon: '😱', label: '깜짝' },
+};
+const EMOTE_COOLDOWN_MS = 800; // 서버(emoteCooldownMs)와 같은 값. 표시용이고 실제 검사는 서버가 한다.
+
 import { playSfx } from './sfx.js';
 import { applyTheme, sceneSvg, sparkle, SCENE_W, SCENE_TOP, SCENE_BOTTOM, SCENE_FLOOR } from './maps.js';
 import { coach } from './tutorial.js';
@@ -149,6 +163,7 @@ export class Game {
     this.prevState = room.state;
 
     $('#screen-game').classList.toggle('tutorial', !!room.settings.tutorial);
+    $('#screen-game').classList.toggle('solo', !!room.settings.solo);
     $('#room-title').textContent = room.settings.title;
     $('#room-code').textContent = room.settings.tutorial ? '튜토리얼 모드' : room.settings.solo ? '솔로 플레이' : `방 코드 ${room.code} ⧉`;
     this.renderHud($('#hud-me'), this.me);
@@ -408,9 +423,52 @@ export class Game {
     b.timers.bubble = setTimeout(() => el.classList.remove('show'), 3200);
   }
 
-  // 캐릭터를 누르면 폴짝 뛴다. 채팅 기능은 없다.
+  // 캐릭터를 누르면 폴짝 뛴다. 글로 말하는 채팅은 없고, 정해진 이모지 8개만 보낼 수 있다.
   bindChat() {
     for (const b of Object.values(this.boards)) b.r.avatar.addEventListener('click', () => replay(b.r.avatar, 'hop'));
+    this.buildEmoteBar();
+    socket.on('emote', (d) => this.onEmote(d));
+  }
+
+  // 내 입력창 위에 이모지 버튼 줄을 만든다
+  buildEmoteBar() {
+    const { form } = this.boards.me.r;
+    const bar = document.createElement('div');
+    bar.className = 'emote-bar';
+    bar.setAttribute('role', 'group');
+    bar.setAttribute('aria-label', '이모지 감정표현');
+    for (const [id, e] of Object.entries(EMOTES)) {
+      const btn = Object.assign(document.createElement('button'), { type: 'button', className: 'emote-btn', textContent: e.icon, title: e.label });
+      btn.addEventListener('click', async () => {
+        if (this.emoteCooling) return;
+        this.emoteCooling = true;
+        bar.classList.add('cooling');
+        setTimeout(() => {
+          this.emoteCooling = false;
+          bar.classList.remove('cooling');
+        }, EMOTE_COOLDOWN_MS);
+        const res = await request('emote:send', { emoteId: id });
+        if (!res.ok) toast(res.error, 'error', 1500);
+      });
+      bar.append(btn);
+    }
+    form.prepend(bar);
+    this.emoteBar = bar;
+  }
+
+  // 누군가 이모지를 보냈다: 그 캐릭터가 폴짝 뛰고 머리 위로 이모지가 떠오르며, HUD 말풍선에도 뜬다
+  onEmote({ from, emoteId }) {
+    const e = EMOTES[emoteId];
+    const b = this.boardOf(from);
+    if (!e || !b) return;
+    replay(b.r.avatar, 'hop');
+    const fl = document.createElement('span');
+    fl.className = 'emote-float';
+    fl.textContent = e.icon;
+    fl.style.setProperty('--dx', `${Math.round(Math.random() * 40 - 20)}px`);
+    b.r.avatar.after(fl);
+    setTimeout(() => fl.remove(), 1900);
+    this.say(b, e.icon);
   }
 
   // ---------- 입력 ----------

@@ -323,6 +323,12 @@ io.on('connection', (socket) => {
     reply(ack, room.skip(socket.data.playerId));
   });
 
+  socket.on('emote:send', ({ emoteId } = {}, ack) => {
+    const room = currentRoom();
+    if (!room) return reply(ack, { ok: false, error: '방에 들어가 있지 않아요' });
+    reply(ack, room.emote(socket.data.playerId, emoteId));
+  });
+
   socket.on('player:typing', ({ len } = {}) => {
     const code = socket.data.roomCode;
     if (!code) return;

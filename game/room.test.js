@@ -507,3 +507,15 @@ test('방 설정의 AI 제공자를 쓰고, 없으면 기본 AI로 돌아간다'
   await answered(d);
   assert.equal(calls.at(-1), 'default');
 });
+
+test('이모지: 정해진 번호만 방 전체에 전달하고, 연속 전송은 쿨다운으로 막는다', async () => {
+  const c = setup({ timing: { ...FAST, emoteCooldownMs: 300 } });
+  await playing(c);
+  assert.equal(c.room.emote('pA', 'fire').ok, true);
+  assert.deepEqual(c.events('emote').at(-1).payload, { from: 'pA', emoteId: 'fire' });
+  assert.equal(c.room.emote('pA', 'laugh').ok, false); // 쿨다운
+  assert.equal(c.room.emote('pB', 'nope').ok, false); // 없는 번호
+  assert.equal(c.room.emote('pB', '<script>').ok, false); // 자유 입력 불가
+  await until(() => c.room.emote('pA', 'laugh').ok);
+  assert.equal(c.events('emote').length, 2);
+});

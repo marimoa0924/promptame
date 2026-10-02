@@ -18,11 +18,14 @@ const DEFAULT_TIMING = {
   judgeBaseMs: 900, // 평가 AI가 답변을 "읽는" 시간. 너무 빨리 채점되면 사용자가 결과를 읽을 틈이 없다.
   judgePerLineMs: 750,
   waitTtlMs: 600_000, // 대기방은 10분 안에 상대가 안 오면 닫는다
+  emoteCooldownMs: 800, // 이모지 연속 전송 최소 간격
   submitGapMs: 1000, // 같은 사람의 프롬프트 전송 최소 간격
   rematchMs: 10_000, // 한 번 더 하기 요청이 유효한 시간
 };
 const LOG_MAX = 60; // 결과 화면에 보여 줄 프롬프트 기록은 사람당 최대 60개
 const LOG_ANSWER_MAX = 400;
+// 보낼 수 있는 이모지 번호. 그림은 클라이언트(public/js/game.js EMOTES)가 같은 번호로 그린다.
+export const EMOTE_IDS = ['thumbs', 'laugh', 'cool', 'cry', 'think', 'fire', 'clap', 'shock'];
 const RECONNECT_GRACE_MS = 20_000;
 const FREEZE_MS = 5000;
 const SKIP_PAUSE_MS = 3000; // 건너뛰면 내 입력이 잠깐 멈춘다 (분량만 골라 뽑는 것을 막는다)
@@ -489,6 +492,20 @@ export class Room {
       players: players.map((p) => ({ id: p.id, accountId: p.device, name: p.name, score: p.score, firstTry: p.firstTry, bestStreak: p.bestStreak, log: p.log })),
     });
     if (rewards && Object.keys(rewards).length) this.lastResult.rewards = rewards;
+  }
+
+  // ---------- 이모지 감정표현 ----------
+  // 정해진 이모지 8개만 보낼 수 있다(자유 입력 없음). 방 전체에 알려 주고, 같은 사람은 emoteCooldownMs마다 한 번만 보낼 수 있다.
+  emote(playerId, emoteId) {
+    const p = this.players.get(playerId);
+    if (!p) return { ok: false, error: '방에 없어요' };
+    if (this.settings.solo || this.settings.tutorial) return { ok: false, error: '혼자 하는 판에서는 쓸 수 없어요' };
+    if (!EMOTE_IDS.includes(emoteId)) return { ok: false, error: '없는 이모지예요' };
+    const now = Date.now();
+    if (now - (p.lastEmoteAt ?? 0) < this.t.emoteCooldownMs) return { ok: false, error: '너무 빨라요!' };
+    p.lastEmoteAt = now;
+    this.emit('emote', { from: p.id, emoteId });
+    return { ok: true };
   }
 
   // ---------- 한번 더 하기 ----------
