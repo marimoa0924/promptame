@@ -9,6 +9,7 @@ test('프롬프트를 시스템 프롬프트 없이 그대로 보내고 생각 �
   let sent;
   const ai = createGemini({
     apiKey: 'k',
+    model: 'gemini-2.5-flash',
     fetchImpl: async (url, init) => {
       sent = { url, init, body: JSON.parse(init.body) };
       return { ok: true, status: 200, json: async () => ({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: '답' }] } }], usageMetadata: { promptTokenCount: 3, candidatesTokenCount: 1, thoughtsTokenCount: 2 } }) };
@@ -93,6 +94,7 @@ test('생각 기능 설정을 거부하는 모델이면 그 설정만 빼고 다
   const bodies = [];
   const ai = createGemini({
     apiKey: 'k',
+    model: 'gemini-2.5-flash',
     fetchImpl: async (u, init) => {
       const b = JSON.parse(init.body);
       bodies.push(b);
@@ -104,4 +106,12 @@ test('생각 기능 설정을 거부하는 모델이면 그 설정만 빼고 다
   assert.equal(bodies.length, 2);
   await ai.generate('y');
   assert.equal(bodies.length, 3); // 한 번 알게 된 뒤에는 처음부터 빼고 보낸다
+});
+
+test('gemini-3 계열은 처음부터 생각 설정을 보내지 않아서 거부당하는 첫 호출이 없다', async () => {
+  const bodies = [];
+  const ai = createGemini({ apiKey: 'k', model: 'gemini-3.5-flash-lite', fetchImpl: async (u, init) => (bodies.push(JSON.parse(init.body)), { ok: true, status: 200, json: async () => ({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: '답' }] } }] }) }) });
+  assert.equal((await ai.generate('x')).status, 'OK');
+  assert.equal(bodies.length, 1);
+  assert.equal(bodies[0].generationConfig.thinkingConfig, undefined);
 });

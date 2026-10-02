@@ -326,9 +326,9 @@ io.on('connection', (socket) => {
   });
 });
 
-// 키가 있으면 서버를 켤 때 한 번 호출해서 연결이 되는지 바로 알려 준다. 끄려면 AI_SELFTEST=0
+// 구글이 클라이언트 ID를 아는지 서버를 켤 때 한 번 확인한다(비용 없음). 끄려면 GOOGLE_SELFTEST=0
 async function googleSelfTest() {
-  if (!GOOGLE_CLIENT_ID || process.env.AI_SELFTEST === '0') return;
+  if (!GOOGLE_CLIENT_ID || process.env.GOOGLE_SELFTEST === '0') return;
   const r = await checkClientId(GOOGLE_CLIENT_ID);
   if (r.status === 'NOT_FOUND') {
     console.log('  ❌ 구글이 이 클라이언트 ID를 모른대요 (invalid_client). 구글 로그인이 401 invalid_client로 실패해요.');
@@ -338,7 +338,8 @@ async function googleSelfTest() {
   else console.log(`  (구글 클라이언트 ID 확인은 못 했어요: ${r.detail})`);
 }
 
-// 키가 있는 AI 제공자마다 서버를 켤 때 한 번 호출해서 연결이 되는지 알려 준다
+// AI 제공자마다 "안녕"을 한 번 보내서 연결을 확인한다. 호출 비용이 들어서 기본으로는 하지 않고,
+// 키나 모델 이름을 점검할 때만 AI_SELFTEST=1로 켠다.
 async function providerSelfTest(id, client) {
   const label = PROVIDERS[id].label;
   const r = await client.generate('안녕이라고만 답해 줘');
@@ -367,7 +368,7 @@ async function providerSelfTest(id, client) {
 
 async function selfTest() {
   googleSelfTest();
-  if (process.env.AI_SELFTEST === '0') return;
+  if (process.env.AI_SELFTEST !== '1') return;
   for (const [id, client] of Object.entries(providers.available)) providerSelfTest(id, client);
 }
 

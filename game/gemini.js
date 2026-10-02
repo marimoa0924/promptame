@@ -25,7 +25,9 @@ export function createGemini({
 } = {}) {
   if (!apiKey) throw new Error('GEMINI_API_KEY가 없어요');
   model = String(model).trim().replace(/^models\//, ''); // 'models/gemini-...'로 적어도 된다
-  let useThinking = thinkingBudget !== '' && thinkingBudget != null; // 모델이 이 설정을 거부하면 빼고 다시 시도한다
+  // 생각 끄기 설정(thinkingBudget)을 보낸다. gemini-3 계열은 이 설정을 거부하는 것이 확인되어서 처음부터 보내지 않는다.
+  // 다른 모델이 거부하면 빼고 다시 시도하고, 그 뒤로는 계속 뺀다.
+  let useThinking = thinkingBudget !== '' && thinkingBudget != null && !/^gemini-3/.test(model);
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
   return {
@@ -65,7 +67,6 @@ export function createGemini({
           // 생각 기능 설정을 받지 않는 모델이면 그 설정만 빼고 한 번 더 보낸다
           if (res.status === 400 && useThinking) {
             useThinking = false;
-            console.warn(`[ai] 400 오류(${errBody?.error?.message ?? ''}) → thinkingBudget 설정을 빼고 다시 호출해요`);
             res = await call();
             errBody = res.ok ? null : await res.json().catch(() => null);
           }
