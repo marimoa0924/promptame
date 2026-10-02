@@ -131,6 +131,12 @@ test('실패 이유 목록', () => {
   assert.deepEqual(checkAnswer('', easy, { type: 'chars', value: 50 }).reasons, ['EMPTY', 'KEYWORD_SHORT']);
 });
 
+test('이미 나온 문제는 먼저 피해서 뽑아요', () => {
+  const first = drawSequence(data, '쉬움', 10).map((x) => x.problem.id);
+  const next = drawSequence(data, '쉬움', 10, Math.random, first).map((x) => x.problem.id);
+  assert.equal(next.filter((id) => first.includes(id)).length, 0);
+});
+
 test('문제 목록은 풀을 다 쓰기 전에는 겹치지 않고 다 쓰면 다시 섞어요', () => {
   const list = drawSequence(data, '보통', 40);
   assert.equal(list.length, 40);

@@ -242,10 +242,11 @@ export function drawQuestion(data, difficulty, usedIds = [], rng = Math.random) 
 }
 
 // 판 시작 때 문제 목록을 한 번에 뽑아요. 난이도 풀을 다 쓰면 다시 섞어서 이어 붙여요.
-export function drawSequence(data, difficulty, count, rng = Math.random) {
+// usedIds에 이미 나온 문제 번호를 넣으면 그것들을 먼저 피해서 뽑아요(한 번 더 하기에서 씀).
+export function drawSequence(data, difficulty, count, rng = Math.random, usedIds = []) {
   const poolSize = data.problems.filter((p) => p.difficulty === difficulty).length;
   const list = [];
-  let used = [];
+  let used = [...usedIds];
   for (let i = 0; i < count; i++) {
     if (used.length >= poolSize) used = [];
     const item = drawQuestion(data, difficulty, used, rng);

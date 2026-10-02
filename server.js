@@ -30,7 +30,8 @@ for (const file of ['promptRules.js', 'nickname.js']) {
   app.get(`/shared/${file}`, (_req, res) => res.sendFile(fileURLToPath(new URL(`./${file}`, import.meta.url))));
 }
 const httpServer = createServer(app);
-const io = new Server(httpServer);
+// 메시지 한 건은 8KB까지만 받는다 (프롬프트 최대 2000자는 이 안에 들어간다)
+const io = new Server(httpServer, { maxHttpBufferSize: 8 * 1024 });
 
 const rooms = new Map();
 
