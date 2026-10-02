@@ -2,6 +2,7 @@
 import { request } from './net.js';
 import { $, refs, toast, CHARACTERS, charSvg } from './ui.js';
 import { state, setAccount } from './auth.js';
+import { playGacha } from './gacha.js';
 
 const BUY_PRICE = 120; // 서버(game/accounts.js ECON)와 같은 값. 표시용이고, 실제 검사는 서버가 한다.
 const GACHA_PRICE = 50;
@@ -53,10 +54,7 @@ export function initShop() {
       return render();
     }
     setAccount(res.account);
-    const c = CHARACTERS[res.char];
-    r.reveal.innerHTML = `<div class="reveal-card"><span class="char-icon">${charSvg(res.char)}</span><b>🎉 ${c?.name ?? res.char} 획득!</b></div>`;
-    r.reveal.hidden = false;
-    setTimeout(() => (r.reveal.hidden = true), 2600);
+    await playGacha(r.reveal, res.char, { total: Object.keys(CHARACTERS).length, owned: res.account.owned });
     render();
   }
 
