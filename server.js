@@ -348,10 +348,20 @@ async function providerSelfTest(id, client) {
     return;
   }
   const { keyEnv, modelEnv } = PROVIDERS[id];
-  console.log(`  ❌ ${label} 호출 실패: ${r.status} ${r.finishReason ?? ''} ${r.detail ?? ''}\n     → 키(${keyEnv})와 모델 이름(${modelEnv})을 확인하세요`);
-  if (r.finishReason === 'HTTP_404' || r.finishReason === 'HTTP_400') {
+  const detail = `${r.detail ?? ''}`;
+  console.log(`  ❌ ${label} 호출 실패: ${r.status} ${r.finishReason ?? ''} ${detail}`);
+  // 원인에 맞는 안내만 한다
+  if (/credit|billing|quota|insufficient|exceeded/i.test(detail) || r.finishReason === 'HTTP_429' || r.finishReason === 'HTTP_402') {
+    console.log(`     → 키와 모델은 맞아요. ${label} 계정의 결제(크레딧)나 사용 한도 문제예요. 해당 서비스의 Billing 페이지에서 크레딧을 충전하거나 한도를 확인하세요.`);
+    console.log(`     → 지금은 쓰지 않으려면 .env 에서 ${keyEnv} 줄을 지우고 서버를 다시 켜세요.`);
+  } else if (r.finishReason === 'HTTP_401' || r.finishReason === 'HTTP_403') {
+    console.log(`     → 키(${keyEnv})가 틀렸거나 권한이 없어요. 키를 다시 복사해서 넣으세요.`);
+  } else if (r.finishReason === 'HTTP_404' || /model/i.test(detail)) {
+    console.log(`     → 모델 이름(${modelEnv})이 틀렸을 수 있어요.`);
     const names = id === 'gemini' ? (await listModels(process.env.GEMINI_API_KEY)).filter((n) => n.includes('gemini')) : await client.listModels?.();
     if (names?.length) console.log(`     → 이 키로 쓸 수 있는 모델: ${names.slice(0, 12).join(', ')}\n     → .env 의 ${modelEnv}= 뒤에 위 이름 중 하나를 적고 서버를 다시 켜세요`);
+  } else {
+    console.log(`     → 키(${keyEnv})와 모델 이름(${modelEnv}), 네트워크를 확인하세요.`);
   }
 }
 
