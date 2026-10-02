@@ -10,6 +10,7 @@ try {
 import { createServer } from 'node:http';
 import { networkInterfaces } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 import { Server } from 'socket.io';
 import { Room } from './game/room.js';
 import { listModels } from './game/gemini.js';
@@ -63,11 +64,18 @@ const app = express();
 app.get('/favicon.ico', (_req, res) => res.status(204).end());
 // 화면이 구글 로그인 버튼을 그릴 때 쓰는 공개 설정(클라이언트 ID는 비밀이 아니다)
 app.get('/config.json', (_req, res) => res.json({ googleClientId: GOOGLE_CLIENT_ID, providers: providers.info(), defaultAi: providers.defaultKind }));
-app.use(express.static('public'));
+// 화면 파일 폴더. 실행한 위치가 아니라 server.js 옆의 public을 쓴다 (배포 서비스는 다른 폴더에서 실행하기도 한다)
+const PUBLIC_DIR = fileURLToPath(new URL('./public', import.meta.url));
+app.use(express.static(PUBLIC_DIR));
 // 금지어 검사 규칙은 서버와 같은 파일을 브라우저에서도 쓴다
 for (const file of ['promptRules.js', 'nickname.js']) {
   app.get(`/shared/${file}`, (_req, res) => res.sendFile(fileURLToPath(new URL(`./${file}`, import.meta.url))));
 }
+// 그 밖의 주소로 바로 들어와도 메인 화면을 준다. 확장자가 있는 주소(없는 파일)는 그대로 404
+app.get(/^\/(?!socket\.io\/|shared\/)[^.]*$/, (req, res, next) => {
+  if (!req.accepts('html')) return next();
+  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+});
 const httpServer = createServer(app);
 // 메시지 한 건은 8KB까지만 받는다 (프롬프트 최대 2000자는 이 안에 들어간다)
 // 다른 사이트에서 이 서버로 몰래 접속하는 것을 막는다: 브라우저가 보내는 Origin이 이 서버 주소와 같을 때만 받는다.
