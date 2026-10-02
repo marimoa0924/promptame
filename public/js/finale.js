@@ -40,6 +40,8 @@ export class Finale {
     r.intro.hidden = false;
     r.winnerIs.hidden = r.winnerName.hidden = true;
     r.dots.textContent = '';
+    // 솔로와 무효 판에는 승자가 없으니 "The Winner is" 대신 상황에 맞는 말을 쓴다
+    r.winnerIs.firstChild.nodeValue = result.isSolo ? '솔로 결과는' : result.reason === 'aborted' ? '이번 판은' : 'The Winner is';
     replay(r.dudung, 'boom');
     replay(document.body, 'shake');
 
@@ -49,10 +51,18 @@ export class Finale {
     }, 1300);
     this.later(() => {
       const winner = result.players.find((p) => p.id === result.winnerId);
-      r.winnerName.textContent = winner ? `${winner.name}!!!` : '무승부!!';
+      const mine = result.players.find((p) => p.id === meId);
+      const solo = result.isSolo ? result.soloResult : null;
+      r.winnerName.textContent = result.isSolo
+        ? `${mine?.score ?? 0} PASS${solo?.isBest ? ' 신기록' : ''}!!`
+        : result.reason === 'aborted'
+          ? '무효!!'
+          : winner
+            ? `${winner.name}!!!`
+            : '무승부!!';
       r.winnerName.hidden = false;
       replay(r.winnerName, 'pop');
-      if (winner) this.fireworks.burst(3);
+      if (winner || (result.isSolo && result.soloResult?.isBest)) this.fireworks.burst(3);
     }, 3700);
     this.later(() => this.showCard(), 6000);
   }
