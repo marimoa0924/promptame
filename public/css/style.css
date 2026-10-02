@@ -136,7 +136,7 @@ b { font-weight: 700; }
   background: var(--paper); box-shadow: var(--frame-sm), inset 0 3px 0 0 rgba(0, 0, 0, 0.08);
 }
 .field input:focus { background: #fff; box-shadow: 0 -3px 0 0 var(--accent), 0 3px 0 0 var(--accent), -3px 0 0 0 var(--accent), 3px 0 0 0 var(--accent); }
-.code-input { text-transform: uppercase; letter-spacing: 0.5em; font-size: 1.5rem; text-align: center; }
+.code-input { text-transform: uppercase; letter-spacing: 0.2em; font-size: 1.5rem; text-align: center; }
 
 /* 캐릭터 타일: 팔레트 카드처럼 [아이콘][이름] */
 .char-grid { display: flex; flex-direction: column; gap: 12px; }
@@ -310,6 +310,7 @@ b { font-weight: 700; }
 .slot-topic .reel { font-size: 1.25rem; }
 .reel-strip { display: block; will-change: transform; }
 .reel-item { display: block; height: 1.5em; line-height: 1.5em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reel-item.wrap { white-space: normal; line-height: 1.15; word-break: keep-all; display: flex; align-items: center; }
 .slot.spinning { animation: slot-spin 0.18s steps(2) infinite; }
 .slot.spinning .reel { -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent); mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent); }
 @keyframes slot-spin { 50% { box-shadow: 0 -3px 0 0 var(--accent-2), 0 3px 0 0 var(--accent-2), -3px 0 0 0 var(--accent-2), 3px 0 0 0 var(--accent-2); } }
@@ -357,6 +358,9 @@ b { font-weight: 700; }
   background: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 .prompt-line:empty { background: none; padding: 0; color: var(--muted); }
+.board.me .prompt-line.recallable:not(:empty) { cursor: pointer; }
+.board.me .prompt-line.recallable:not(:empty):hover { background: color-mix(in srgb, var(--accent) 30%, transparent); }
+.board.me .prompt-line.recallable:not(:empty)::after { content: ' ↺ 눌러서 다시 쓰기'; font-size: 0.75rem; color: var(--muted); }
 .prompt-line:empty::before { content: '프롬프트를 보내면 내 캐릭터가 여기서 답해요'; }
 .board.opp .prompt-line:empty::before { content: '상대 캐릭터의 답변이 여기 떠요'; }
 .answer { white-space: pre-wrap; font-size: 1.02rem; }
@@ -481,6 +485,8 @@ b { font-weight: 700; }
 .prompt-box textarea:disabled { opacity: 0.6; }
 .prompt-box.has-banned textarea { background: #ffe1ea; box-shadow: 0 -3px 0 0 var(--danger), 0 3px 0 0 var(--danger), -3px 0 0 0 var(--danger), 3px 0 0 0 var(--danger); }
 .prompt-box.shake { animation: shake 0.3s steps(4); }
+.prompt-box.recalled textarea { animation: recalled 0.35s steps(2); }
+@keyframes recalled { 50% { background: color-mix(in srgb, var(--accent-2) 45%, #fff); } }
 .prompt-meta { display: flex; align-items: center; gap: 10px; }
 .prompt-warn { flex: 1; color: #c8003e; font-size: 0.8rem; }
 .counter { font-size: 0.85rem; color: var(--muted); }

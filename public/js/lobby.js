@@ -114,7 +114,8 @@ export function initLobby({ onEnterRoom }) {
 
   $('#form-join').addEventListener('submit', (e) => {
     e.preventDefault();
-    const code = e.currentTarget.code.value.trim().toUpperCase();
+    // 복사해 온 코드에 섞인 공백·하이픈 등은 떼고 읽는다
+    const code = e.currentTarget.code.value.replace(/[^0-9a-z]/gi, '').toUpperCase();
     if (!code) return toast('방 코드를 입력해 주세요', 'error');
     if (!nameOk()) return;
     withBusy(e.currentTarget, async () => {

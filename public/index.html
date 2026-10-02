@@ -92,7 +92,7 @@
         <form class="tab-body" data-body="join" id="form-join" hidden>
           <label class="field">
             <span>방 코드</span>
-            <input name="code" maxlength="6" placeholder="ABCDEF" autocomplete="off" class="code-input" />
+            <input name="code" maxlength="12" placeholder="ABCDEF" autocomplete="off" spellcheck="false" class="code-input" />
           </label>
           <button class="btn btn-primary btn-block" type="submit">입장하기</button>
         </form>
@@ -163,6 +163,7 @@
         <div class="prompt-meta">
           <span class="prompt-warn" data-ref="warn"></span>
           <span class="counter" data-ref="counter"></span>
+          <button class="btn btn-ghost" type="button" data-ref="recall" title="이전 프롬프트 불러오기 (빈 입력칸에서 ↑/↓)" disabled>↺ 이전</button>
           <button class="btn btn-ghost" type="button" data-ref="skip" title="점수 없이 다음 문제로 (3초간 입력 정지)">건너뛰기</button>
           <button class="btn btn-primary" type="submit" data-ref="send">보내기</button>
         </div>

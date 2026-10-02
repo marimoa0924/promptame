@@ -88,7 +88,7 @@ io.on('connection', (socket) => {
 
   socket.on('room:join', ({ playerId, profile, code } = {}, ack) => {
     if (!validId(playerId)) return reply(ack, { ok: false, error: '잘못된 요청이에요' });
-    const room = rooms.get(String(code ?? '').trim().toUpperCase());
+    const room = rooms.get(String(code ?? '').replace(/[^0-9a-z]/gi, '').toUpperCase());
     if (!room) return reply(ack, { ok: false, error: '방을 찾을 수 없어요' });
     // 이미 방에 있던 사람의 재접속은 닉네임을 다시 검사하지 않는다
     const who = room.players.has(playerId) ? { ok: true, profile: {} } : cleanProfile(profile);

@@ -32,11 +32,44 @@ function createBoard(slot, isMe) {
     const scale = Math.max(width / SCENE_W, height / (SCENE_BOTTOM - SCENE_TOP));
     r.frame.style.setProperty('--floor', `${Math.round((SCENE_BOTTOM - SCENE_FLOOR) * scale)}px`);
   }).observe(r.frame);
+  // 칸 너비가 바뀌면 멈춰 있는 글자 크기를 다시 맞춘다
+  new ResizeObserver(() => {
+    for (const k of ['topic', 'length', 'keyword']) fitReel(r[k]);
+  }).observe(r.slotKeyword.parentElement);
   return { el, r, isMe, playerId: null, topicKey: null, spin: {}, overlayKey: null, timers: {}, judgeTimers: [] };
 }
 
 const REEL_SPINS = 14;
-const reelItem = (text) => Object.assign(document.createElement('span'), { className: 'reel-item', textContent: text });
+const FIT_MIN = 0.55; // 최소 글자 크기 (원래 크기 대비)
+const reelItem = (text) => Object.assign(document.createElement('span'), { className: 'reel-item', textContent: text, title: text });
+
+// 긴 글자는 잘라내지 않고 칸에 들어갈 때까지 글자를 줄인다 (높이는 그대로라 세로 위치가 흔들리지 않는다)
+function fitReel(strip) {
+  const item = strip.firstElementChild;
+  if (!item || strip.childElementCount !== 1) return;
+  item.classList.remove('wrap');
+  item.style.fontSize = item.style.height = item.style.lineHeight = '';
+  const box = strip.parentElement.clientWidth;
+  if (!box || item.scrollWidth <= box) return;
+  const rowPx = strip.parentElement.clientHeight;
+  item.style.height = item.style.lineHeight = `${rowPx}px`;
+  let size = Math.max(FIT_MIN, box / item.scrollWidth);
+  item.style.fontSize = `${size}em`;
+  while (item.scrollWidth > box && size > FIT_MIN) {
+    size = Math.max(FIT_MIN, size - 0.04);
+    item.style.fontSize = `${size}em`;
+  }
+  if (item.scrollWidth <= box) return;
+  // 가장 작게 줄여도 넘치면(좁은 화면) 두 줄로 나눠 보여 준다
+  item.classList.add('wrap');
+  item.style.lineHeight = '';
+  size = 0.7;
+  item.style.fontSize = `${size}em`;
+  while (item.scrollHeight > rowPx + 1 && size > 0.5) {
+    size -= 0.04;
+    item.style.fontSize = `${size}em`;
+  }
+}
 
 export class Game {
   constructor() {
@@ -47,6 +80,8 @@ export class Game {
     this.startFlashUntil = 0;
     this.me = null;
     this.opp = null;
+    this.history = []; // 이번 방에서 내가 보낸 프롬프트
+    this.historyIdx = null; // 불러온 기록 위치 (null이면 새로 쓰는 중)
     this.boards = {
       me: createBoard($('#side-me'), true),
       opp: createBoard($('#side-opp'), false),
@@ -167,6 +202,7 @@ export class Game {
     strip.style.transform = '';
     strip.replaceChildren(reelItem(text));
     this.slotOf(b, k).classList.remove('spinning');
+    fitReel(strip);
   }
 
   slotOf(b, k) {
@@ -343,7 +379,8 @@ export class Game {
     const { r } = this.boards.me;
     let lastTypingSent = 0;
 
-    r.input.addEventListener('input', () => {
+    r.input.addEventListener('input', (e) => {
+      if (e.isTrusted) this.historyIdx = null; // 직접 고치기 시작하면 ↑/↓는 다시 커서 이동
       this.updateCounter();
       this.checkBanned();
       const now = Date.now();
@@ -357,7 +394,20 @@ export class Game {
       if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
         e.preventDefault();
         r.form.requestSubmit();
+        return;
       }
+      // 입력칸이 비었거나 이전 프롬프트를 보는 중이면 ↑/↓로 기록을 오간다 (터미널처럼)
+      const browsing = !r.input.value.trim() || this.historyIdx !== null;
+      if (browsing && !e.isComposing && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        if (this.recall(e.key === 'ArrowUp' ? -1 : 1)) e.preventDefault();
+      }
+    });
+
+    r.recall.addEventListener('click', () => this.recall(-1));
+    // 말풍선 속 내 프롬프트(▶ 줄)를 누르면 입력칸으로 가져온다
+    r.prompt.addEventListener('click', () => {
+      const last = this.history.at(-1);
+      if (last) this.loadPrompt(last, this.history.length - 1);
     });
 
     r.skip.addEventListener('click', async () => {
@@ -383,6 +433,8 @@ export class Game {
         toast(res.error, 'error');
         replay(r.form, 'shake');
       } else {
+        if (this.history.at(-1) !== text) this.history.push(text);
+        this.historyIdx = null;
         r.input.value = '';
         this.updateCounter();
         this.checkBanned();
@@ -390,6 +442,32 @@ export class Game {
       }
       this.updateForm();
     });
+  }
+
+  // ---------- 이전 프롬프트 불러오기 ----------
+
+  // dir: -1이면 더 이전 것, +1이면 더 최근 것. 맨 끝을 지나면 입력칸을 비운다.
+  recall(dir) {
+    if (!this.history.length) return false;
+    const last = this.history.length - 1;
+    let idx = this.historyIdx === null ? (dir < 0 ? last : null) : this.historyIdx + dir;
+    if (idx === null) return false;
+    if (idx < 0) idx = 0;
+    if (idx > last) {
+      this.historyIdx = null;
+      this.fillPrompt('');
+      return true;
+    }
+    this.loadPrompt(this.history[idx], idx);
+    return true;
+  }
+
+  loadPrompt(text, idx) {
+    this.fillPrompt(text);
+    this.historyIdx = idx;
+    const { r } = this.boards.me;
+    r.input.setSelectionRange(text.length, text.length);
+    replay(r.form, 'recalled');
   }
 
   fillPrompt(text) {
@@ -430,6 +508,8 @@ export class Game {
     r.input.disabled = !playing || frozen;
     r.send.disabled = !playing || !me || me.busy || frozen;
     r.skip.disabled = r.send.disabled || !!this.room?.settings.tutorial;
+    r.recall.disabled = !this.history.length || r.input.disabled;
+    r.prompt.classList.toggle('recallable', this.history.length > 0);
     r.input.placeholder = !playing
       ? '게임이 시작되면 입력할 수 있어요'
       : frozen
@@ -504,6 +584,8 @@ export class Game {
     applyTheme(document.body, 'lobby');
     this.resetBoards();
     this.boards.me.r.input.value = '';
+    this.history = [];
+    this.historyIdx = null;
     $('#final-count').hidden = true;
     $('#countdown').hidden = true;
   }
