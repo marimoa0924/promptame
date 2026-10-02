@@ -1,6 +1,7 @@
 // 로그인(구글 또는 게스트)과 로그인한 계정 상태. 판단은 서버가 하고, 여기서는 토큰을 보관하고 화면을 이어 준다.
 import { socket, session, request, tokenStore } from './net.js';
 import { $, showScreen, toast } from './ui.js';
+import { playIntro } from './intro.js';
 
 export const state = { account: null, googleEnabled: false, clientId: '' };
 const listeners = [];
@@ -75,7 +76,9 @@ export async function logout() {
 
 // 시작: 저장된 토큰으로 이어서 로그인하고, 안 되면 로그인 화면을 보여 준다
 export async function startAuth(onReady) {
-  afterLogin = () => {
+  afterLogin = async () => {
+    // 진행 중이던 게임으로 복귀할 때는 인트로 없이 바로 넘어간다
+    if (!session.room) await playIntro();
     showScreen('screen-lobby');
     onReady?.();
   };
