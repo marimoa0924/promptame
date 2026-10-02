@@ -191,9 +191,12 @@ export const DEFAULT_DIFFICULTY_RULES = {
 };
 
 // lengthRule은 { type: 'chars' | 'sentences', value: 숫자 } 형태예요.
-export function checkAnswer(answer, problem, lengthRule, difficultyRules = DEFAULT_DIFFICULTY_RULES) {
+// opts.truncated가 true면 AI 답변이 토큰 한도로 잘린 거라서 분량 초과로 보고 실패 처리해요.
+// reasons에는 실패 이유가 담겨요: KEYWORD_SHORT, LENGTH_OVER, TRUNCATED, EMPTY
+export function checkAnswer(answer, problem, lengthRule, difficultyRules = DEFAULT_DIFFICULTY_RULES, opts = {}) {
   const text = String(answer ?? '').trim();
   const body = normalizeLoose(text);
+  const truncated = opts.truncated === true;
 
   const matched = problem.keywords.filter((k) => body.includes(normalizeLoose(k)));
   const needed = Math.min(
@@ -203,15 +206,23 @@ export function checkAnswer(answer, problem, lengthRule, difficultyRules = DEFAU
   const keywordOk = matched.length >= needed;
 
   const actual = lengthRule.type === 'sentences' ? countSentences(text) : countChars(text);
-  const lengthOk = text.length > 0 && actual <= lengthRule.value;
+  const lengthOk = text.length > 0 && actual <= lengthRule.value && !truncated;
+
+  const reasons = [];
+  if (text.length === 0) reasons.push('EMPTY');
+  if (truncated) reasons.push('TRUNCATED');
+  else if (text.length > 0 && actual > lengthRule.value) reasons.push('LENGTH_OVER');
+  if (!keywordOk) reasons.push('KEYWORD_SHORT');
 
   return {
     pass: keywordOk && lengthOk,
     keywordOk,
     lengthOk,
+    truncated,
     matched,
     needed,
     length: { type: lengthRule.type, limit: lengthRule.value, actual },
+    reasons,
   };
 }
 
@@ -228,4 +239,18 @@ export function drawQuestion(data, difficulty, usedIds = [], rng = Math.random) 
   const problem = source[Math.floor(rng() * source.length)];
   const lengthRule = data.lengthRules[Math.floor(rng() * data.lengthRules.length)];
   return { problem, lengthRule };
+}
+
+// 판 시작 때 문제 목록을 한 번에 뽑아요. 난이도 풀을 다 쓰면 다시 섞어서 이어 붙여요.
+export function drawSequence(data, difficulty, count, rng = Math.random) {
+  const poolSize = data.problems.filter((p) => p.difficulty === difficulty).length;
+  const list = [];
+  let used = [];
+  for (let i = 0; i < count; i++) {
+    if (used.length >= poolSize) used = [];
+    const item = drawQuestion(data, difficulty, used, rng);
+    used.push(item.problem.id);
+    list.push(item);
+  }
+  return list;
 }

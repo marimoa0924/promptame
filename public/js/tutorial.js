@@ -21,7 +21,7 @@ export const LOBBY_STEPS = [
 export const GAME_STEPS = [
   {
     target: '.board.me .topic-card',
-    text: '<b>주제문 룰렛</b>이에요. AI 답변에 <b>주제·분량·필수 키워드</b>가 모두 담기면 PASS!',
+    text: '<b>주제문 룰렛</b>이에요. AI 답변에 <b>필수 키워드</b>가 충분히 담기고 <b>분량</b>을 지키면 PASS!',
   },
   {
     target: '.board.me .banned',
@@ -43,10 +43,9 @@ export const GAME_STEPS = [
     text: '시간은 <b>체력바</b>처럼 줄어요. 10초 남으면 카운트다운! 시간 안에 더 많이 PASS한 쪽이 승리해요.',
   },
   {
-    target: ['.board.me .avatar', '.board.me .chat-form'],
-    text: '캐릭터를 누르면 <b>대사 입력칸</b>이 열려요. 할 말을 쓰고 Enter를 누르면 위쪽 내 이름 옆에 말풍선이 떠요. 상대 화면에도 보여요!',
-    enter: 'openChat',
-    waitFor: 'chat',
+    target: '#emotes',
+    text: '이모티콘을 눌러 <b>반응</b>해 보세요. 위쪽 내 이름 옆에 말풍선으로 뜨고, 상대 화면에도 보여요!',
+    waitFor: 'emote',
     next: '건너뛰기',
   },
   {

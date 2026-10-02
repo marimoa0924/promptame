@@ -447,33 +447,12 @@ b { font-weight: 700; }
 @keyframes pop { from { transform: scale(1.5); } }
 @keyframes shake { 25% { translate: -6px 0; } 75% { translate: 6px 0; } }
 
-.emote-pop {
-  position: absolute; left: calc(var(--av-x) + var(--av) - 14px); bottom: calc(var(--floor, 56px) + var(--av) - 6px); z-index: 4;
-  font-size: 26px; line-height: 1; opacity: 0; pointer-events: none;
-  background: #fff; padding: 4px 6px; box-shadow: var(--frame-sm);
-}
-.board.opp .emote-pop { left: auto; right: calc(var(--av-x) + var(--av) - 14px); }
-.emote-pop.show { animation: emote 1.6s steps(8) forwards; }
-@keyframes emote {
-  0% { opacity: 0; transform: translateY(10px); }
-  15%, 80% { opacity: 1; transform: none; }
-  100% { opacity: 0; transform: translateY(-12px); }
-}
 .typing {
   position: absolute; left: var(--av-x); bottom: calc(var(--floor, 56px) + var(--av) + 8px); z-index: 4;
   font-size: 0.75rem; padding: 2px 8px; background: #fff; color: var(--ink); box-shadow: var(--frame-sm); opacity: 0;
 }
 .board.opp .typing { left: auto; right: var(--av-x); }
 .typing.show { opacity: 1; }
-.chat-form {
-  position: absolute; z-index: 5; left: var(--av-x); bottom: calc(var(--floor, 56px) + var(--av) + 10px);
-  width: min(280px, calc(100% - 28px));
-}
-.chat-form input {
-  width: 100%; padding: 7px 10px; border: 0; outline: none;
-  background: #fff; color: var(--ink); box-shadow: 0 -3px 0 0 var(--accent), 0 3px 0 0 var(--accent), -3px 0 0 0 var(--accent), 3px 0 0 0 var(--accent);
-}
-
 /* 상단 HUD 말풍선 (캐릭터 대사) */
 .hud-player { position: relative; }
 .hud-bubble {

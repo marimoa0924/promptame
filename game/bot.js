@@ -1,23 +1,18 @@
 // 연습봇: 혼자서도 대결 화면을 확인할 수 있게 상대 역할을 한다.
-const shuffle = (list) => [...list].sort(() => Math.random() - 0.5);
+// 봇은 목 AI와 겨룬다. 프롬프트 길이가 제각각이라 PASS도 RETRY도 나온다.
 const pickOne = (list) => list[Math.floor(Math.random() * list.length)];
 
-// 힌트 단어를 조합해 프롬프트를 만든다. 일부러 가끔 길게 쓰거나 대충 써서 RETRY도 나오게 한다.
-export function botPrompt(topic) {
-  const r = Math.random();
-  const hints = shuffle(topic.hints);
-  if (r < 0.55) return `${hints.slice(0, 3).join(', ')}에 대해 초등학생도 알아듣게 짧게 설명해줘`;
-  if (r < 0.8) return `${hints.slice(0, 3).join(', ')} 이야기를 자세히 풀어서 해줘`;
-  return `${hints[0]} 알려줘`;
-}
+const PROMPTS = [
+  '나는 아이들을 가르치는 교사야. 아이들 눈높이에 맞게 짧고 간결하게 설명해줘',
+  '초등학생도 알아듣게 짧게 차근차근 중요한 말을 넣어서 알려줘',
+  '중요한 용어를 빠짐없이 넣어서 자세히 풀어서 설명해줘',
+  '쉽게 짧게 알려줘',
+  '그것에 대해 알려줘',
+];
 
-const LINES = {
-  pass: ['ㅋㅋ 쉽네', '이 정도쯤이야', '다음 거 가자~', '봤지?'],
-  fail: ['아 이게 아닌데', '엉엉', '다시 해볼게…', '흠…'],
-};
+export const botPrompt = () => pickOne(PROMPTS);
 
-export function botLine(pass) {
-  return pickOne(pass ? LINES.pass : LINES.fail);
-}
+const EMOJI = { pass: ['😹', '🔥', '👍'], fail: ['😭', '🙏'] };
+export const botEmoji = (pass) => pickOne(pass ? EMOJI.pass : EMOJI.fail);
 
 export const BOT_NAMES = ['연습봇', '깡통봇', '삐빅봇'];

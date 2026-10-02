@@ -20,6 +20,8 @@ a.on('room:state', (r) => (lastState = r));
 a.on('game:end', (e) => { lastEnd = e; console.log(`  game:end ${e.reason} winner=${e.winnerId} duration=${e.durationMs}ms`); });
 
 // ---- 1) 사람 대 사람 ----
+console.log('bad nickname:', (await ask(a, 'room:create', { playerId: 'player-XXXX', profile: { name: '씨발', char: 'cat' }, settings: {} })).error);
+console.log('long nickname:', (await ask(a, 'room:create', { playerId: 'player-XXXX', profile: { name: '가나다라마바사아자', char: 'cat' }, settings: {} })).error);
 const created = await ask(a, 'room:create', {
   playerId: 'player-AAAA', profile: { name: '냥이', char: 'cat' },
   settings: { title: '테스트', difficulty: 'normal', map: 'space', timeLimit: 120, promptLimit: 100 },
@@ -33,13 +35,23 @@ console.log('state after countdown:', lastState.state);
 
 const topicA = lastState.players.find((p) => p.id === 'player-AAAA').topic;
 console.log('banned check:', await ask(a, 'prompt:submit', { text: `${topicA.topic} 알려줘` }));
+console.log('opponent prompt hidden:', lastState.players.find((p) => p.id === 'player-BBBB').live?.prompt == null);
 const [ra, rb] = await Promise.all([
   ask(a, 'prompt:submit', { text: '선생님인데 아이들에게 설명할 거야. 짧게 알려줘' }),
   ask(b, 'prompt:submit', { text: '아무거나 말해줘' }),
 ]);
+console.log('skip while busy:', (await ask(a, 'prompt:skip')).error);
 console.log('submit', ra.ok, rb.ok, '/ while busy:', (await ask(a, 'prompt:submit', { text: '또' })).error);
 await sleep(9000);
 console.log('events', counts);
+
+// 건너뛰기: AI 답변이 끝난 뒤 눌러야 하고, 점수 없이 내 문제만 넘어간다
+const before = lastState.players.find((p) => p.id === 'player-AAAA');
+const skipped = await ask(a, 'prompt:skip');
+await sleep(200);
+const after = lastState.players.find((p) => p.id === 'player-AAAA');
+console.log('skip:', skipped.ok, 'topicIdx', before.topicIdx, '->', after.topicIdx, 'score', after.score === before.score, 'kind', after.frozenKind);
+console.log('skip again while paused:', (await ask(a, 'prompt:skip')).error);
 
 // 재접속
 b.disconnect();

@@ -1,12 +1,14 @@
 # 04. 실시간 프로토콜
 
+> 이 문서는 목표 명세다. 실제 구현은 Socket.IO이고 이벤트 이름이 다르다. 구현에 쓰는 이벤트와 이 명세와의 차이는 09 문서에 있다. 진행 방식이 독립 진행으로 확정되어 레이스 전용 이벤트(`problem:cancelled`, `problem:resolved`의 선착, `revealAfterMs` 전환)는 폐기했다. [확정]
+
 ## 1. 연결과 기본 규칙
 
 - 연결: `ws://호스트/ws` 하나. 같은 포트에서 정적 파일도 서빙한다. [제안]
 - 모든 메시지는 JSON 한 줄이고, 최대 8KB다. 넘으면 연결을 닫는다. [제안]
 - 형식: `{ "t": "이벤트이름", ...데이터 }`. 서버가 보내는 메시지에는 항상 `ts`(서버 에포크 밀리초)가 들어간다. [확정]
 - 클라이언트가 보내는 요청에는 선택적으로 `rid`(숫자)를 붙일 수 있고, 서버의 응답이나 오류에 같은 `rid`가 돌아온다. [제안]
-- 서버가 기준이다. 타이머, 점수, 문제, 페널티, 선착은 서버가 정하고 클라이언트는 표시만 한다. [확정]
+- 서버가 기준이다. 타이머, 점수, 문제, 페널티는 서버가 정하고 클라이언트는 표시만 한다. [확정]
 - 첫 메시지는 반드시 `hello`다. 그 전의 다른 메시지는 오류로 닫는다. [제안]
 - 방 입장은 코드 입장 하나다. 임의 매칭을 나중에 붙일 때도 서버 안에서 `joinRoomByCode(code)`를 호출하는 입구를 재사용한다. [확정]
 
@@ -78,8 +80,7 @@
 | `answer:ready` | `{ seq, attemptId, text, verdict, present: { typeCps, readMs } }` | 전송한 사람 | P0 |
 | `opponent:answer` | `{ seq, attemptNo, text, verdict, present }` (프롬프트는 없음) | 상대 | P0 |
 | `opponent:status` | `{ state: "IDLE"|"TYPING"|"WAITING_AI"|"REVEALING"|"LOCKED" }` | 상대 | P1 |
-| `problem:cancelled` | `{ seq, reason: "OPPONENT_PASSED" }` | 진행 중이던 쪽 | P0 |
-| `problem:resolved` | `{ seq, outcome: "PASS"|"SKIP", winnerId?, firstTry, scores, streaks, revealAfterMs }` | 방 전체 | P0 |
+| `problem:resolved` | `{ seq, playerId, outcome: "PASS"|"SKIP", firstTry, scores, streaks }` (그 사람 하나의 결과) | 방 전체 | P0 |
 | `skip:state` | `{ seq, votes: { [playerId]: boolean } }` | 방 전체 | P1 |
 | `penalty:start` | `{ targetId, seconds: 5, startsAt, endsAt }` | 방 전체 | P0 |
 | `emote` | `{ from, emoteId }` | 방 전체 | P1 |
@@ -120,9 +121,9 @@
 1. 판정은 서버가 AI 답변을 받자마자 `checkAnswer`로 확정한다. [확정]
 2. `answer:ready`에는 답변 전문, 판정 전체, 연출 시간(`typeCps`, `readMs`)이 한 번에 들어 있다. 클라이언트가 따로 판정을 계산하지 않는다. [확정]
 3. 연출 순서는 답변 재생, 평가 읽기, 결과 공개다. 결과 공개의 종류(PASS 검은 화면, RETRY 블루스크린)는 `verdict.pass`로만 정한다. [확정]
-4. PASS가 선착으로 확정되면 서버가 `problem:resolved`를 보내고 `revealAfterMs`(재생 + 읽기 시간)가 지난 뒤에 클라이언트가 점수를 갱신해서 보여 준다. 연출 전에 점수가 먼저 올라가지 않는다. [제안]
-5. 상대는 `opponent:answer`로 같은 `verdict`와 `present`를 받아 같은 연출을 보되, 입력은 잠긴다. [제안]
-6. 서버는 다음 문제(`problem:new`)를 `problem:resolved` 이후 `revealAfterMs + RESULT_HOLD_MS`가 지나서 보낸다. [제안]
+4. 점수는 평가 연출이 끝나 결과가 공개될 때 올라간다. 연출 전에 점수가 먼저 올라가지 않는다. [제안]
+5. 상대는 `opponent:answer`로 같은 `verdict`와 `present`를 받아 같은 연출을 본다. 상대의 입력은 잠기지 않는다. [제안]
+6. PASS한 사람의 다음 문제(`problem:new`)는 그 사람에게만 간다. [제안]
 
 ## 8. 흐름 예시
 
@@ -141,17 +142,15 @@ S -> A,B game:begin {endsAt}
 S -> A,B problem:new {seq:1, problem, lengthRule, opensAt}
 ```
 
-### 8.2 한 문제: A가 먼저 PASS [제안]
+### 8.2 한 문제: A가 PASS [제안]
 ```
 A -> prompt:submit {seq:1, text}
 S -> A attempt:accepted
-S: Gemini 호출, checkAnswer -> PASS (선착 확정)
+S: Gemini 호출, checkAnswer -> PASS
 S -> A answer:ready {verdict:{pass:true}, present}
-S -> B opponent:answer {...}
-S -> B problem:cancelled {seq:1, reason:"OPPONENT_PASSED"}
-S -> A,B problem:resolved {outcome:"PASS", winnerId:A, scores:{A:1,B:0}, revealAfterMs}
-(연출 시간과 1초 뒤)
-S -> A,B problem:new {seq:2, ...}
+S -> B opponent:answer {...}   (B는 계속 자기 문제를 푼다)
+S -> A,B problem:resolved {playerId:A, outcome:"PASS", scores:{A:1,B:0}}
+S -> A problem:new {seq:2, ...}
 ```
 
 ### 8.3 RETRY [제안]
@@ -164,9 +163,8 @@ S -> B opponent:answer {...}
 
 ### 8.4 3연속 [제안]
 ```
-S -> A,B problem:resolved {winnerId:A, streaks:{A:3,B:0}}
-S -> A,B penalty:start {targetId:B, seconds:5, startsAt:다음 문제 opensAt, endsAt:+5000}
-S -> A,B problem:new {...}
+S -> A,B problem:resolved {playerId:A, streaks:{A:3,B:0}}
+S -> A,B penalty:start {targetId:B, seconds:5, startsAt:지금, endsAt:+5000}
 ```
 
 ## 9. 재접속
@@ -191,5 +189,5 @@ game: { phase: "OPEN"|"RESOLVING"|"INTERMISSION", seq, problem, lengthRule, ends
 3. `checkPrompt(text, 서버의 현재 문제, 방 설정의 프롬프트 제한 ?? 2000)`를 한다. 실패하면 `prompt:rejected`. Gemini 호출 없음.
 4. 통과하면 시도 번호를 올리고 `attempt:accepted`를 보낸다.
 5. Gemini를 호출한다(06 문서). 실패나 빈 응답은 재시도한다.
-6. 답변이 오면 `checkAnswer`로 판정한다. 그 사이 이 문제가 끝났거나 종료 유예를 넘겼다면 결과는 버린다.
-7. PASS면 선착 처리, 점수와 연속 카운트, 페널티를 갱신한다. RETRY면 연속 카운트의 첫 시도 조건을 깨고 판정을 보낸다.
+6. 답변이 오면 `checkAnswer`로 판정한다. 종료 유예를 넘겼다면 결과는 버린다.
+7. PASS면 점수와 연속 카운트, 페널티를 갱신하고 그 사람의 다음 문제를 연다. RETRY면 연속 카운트의 첫 시도 조건을 깨고 판정을 보낸다.

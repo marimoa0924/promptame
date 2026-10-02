@@ -1,8 +1,19 @@
 import express from 'express';
+
+// 프로젝트 폴더의 .env 파일이 있으면 환경변수로 읽는다 (GEMINI_API_KEY 등). 없으면 그냥 넘어간다.
+try {
+  process.loadEnvFile('.env');
+} catch {
+  /* .env 없음 */
+}
+
 import { createServer } from 'node:http';
 import { networkInterfaces } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { Server } from 'socket.io';
 import { Room } from './game/room.js';
+import { createAIFromEnv, listModels } from './game/gemini.js';
+import { checkNickname, nicknameError } from './nickname.js';
 
 const PORT = Number(process.env.PORT) || 3000;
 const CHARACTERS = ['cat', 'pigeon', 'dog', 'otaku'];
@@ -10,8 +21,14 @@ const EMOTES = ['😹', '👍', '🔥', '😭', '🫵', '🙏'];
 const MAPS = ['east', 'future', 'medieval', 'space'];
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
+const ai = createAIFromEnv();
 const app = express();
+app.get('/favicon.ico', (_req, res) => res.status(204).end());
 app.use(express.static('public'));
+// 금지어 검사 규칙은 서버와 같은 파일을 브라우저에서도 쓴다
+for (const file of ['promptRules.js', 'nickname.js']) {
+  app.get(`/shared/${file}`, (_req, res) => res.sendFile(fileURLToPath(new URL(`./${file}`, import.meta.url))));
+}
 const httpServer = createServer(app);
 const io = new Server(httpServer);
 
@@ -20,21 +37,28 @@ const rooms = new Map();
 function newCode() {
   let code;
   do {
-    code = Array.from({ length: 5 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
+    code = Array.from({ length: 6 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
   } while (rooms.has(code));
   return code;
 }
 
 const pick = (value, allowed, fallback) => (allowed.includes(value) ? value : fallback);
 
+const DEFAULT_NAME = '익명의 고수';
+
+// 닉네임이 비어 있으면 기본 이름을 쓰고, 있으면 2~8자와 금칙어 규칙을 지켜야 한다.
 function cleanProfile(profile = {}) {
-  const name = String(profile.name ?? '').trim().slice(0, 12) || '익명의 고수';
-  return { name, char: pick(profile.char, CHARACTERS, 'cat') };
+  const raw = String(profile.name ?? '').trim();
+  const char = pick(profile.char, CHARACTERS, 'cat');
+  if (!raw) return { ok: true, profile: { name: DEFAULT_NAME, char } };
+  const nick = checkNickname(raw);
+  if (!nick.ok) return { ok: false, error: nicknameError(nick.code) };
+  return { ok: true, profile: { name: nick.name, char } };
 }
 
 function cleanSettings(s = {}) {
   if (s.tutorial) {
-    return { title: '튜토리얼', difficulty: 'easy', map: pick(s.map, MAPS, 'east'), timeLimit: 300, promptLimit: 150, tutorial: true };
+    return { title: '튜토리얼', difficulty: 'normal', map: pick(s.map, MAPS, 'east'), timeLimit: 300, promptLimit: 150, tutorial: true };
   }
   return {
     title: String(s.title ?? '').trim().slice(0, 20) || '프롬프트 한 판!',
@@ -53,18 +77,23 @@ io.on('connection', (socket) => {
 
   socket.on('room:create', ({ playerId, profile, settings } = {}, ack) => {
     if (!validId(playerId)) return reply(ack, { ok: false, error: '잘못된 요청이에요' });
+    const who = cleanProfile(profile);
+    if (!who.ok) return reply(ack, who);
     currentRoom()?.leave(socket.data.playerId);
     const code = newCode();
-    const room = new Room(io, code, cleanSettings(settings), (c) => rooms.delete(c));
+    const room = new Room(io, code, cleanSettings(settings), (c) => rooms.delete(c), ai);
     rooms.set(code, room);
-    reply(ack, room.join(socket, playerId, cleanProfile(profile)));
+    reply(ack, room.join(socket, playerId, who.profile));
   });
 
   socket.on('room:join', ({ playerId, profile, code } = {}, ack) => {
     if (!validId(playerId)) return reply(ack, { ok: false, error: '잘못된 요청이에요' });
     const room = rooms.get(String(code ?? '').trim().toUpperCase());
     if (!room) return reply(ack, { ok: false, error: '방을 찾을 수 없어요' });
-    reply(ack, room.join(socket, playerId, cleanProfile(profile)));
+    // 이미 방에 있던 사람의 재접속은 닉네임을 다시 검사하지 않는다
+    const who = room.players.has(playerId) ? { ok: true, profile: {} } : cleanProfile(profile);
+    if (!who.ok) return reply(ack, who);
+    reply(ack, room.join(socket, playerId, who.profile));
   });
 
   socket.on('room:leave', (_payload, ack) => {
@@ -87,19 +116,16 @@ io.on('connection', (socket) => {
     reply(ack, room.addBot());
   });
 
-  socket.on('player:chat', ({ text } = {}) => {
-    const code = socket.data.roomCode;
-    const clean = String(text ?? '').trim().slice(0, 30);
-    const now = Date.now();
-    if (!code || !clean || now - (socket.data.lastChat ?? 0) < 700) return;
-    socket.data.lastChat = now;
-    socket.to(code).emit('player:chat', { playerId: socket.data.playerId, text: clean });
-  });
-
   socket.on('prompt:submit', ({ text } = {}, ack) => {
     const room = currentRoom();
     if (!room) return reply(ack, { ok: false, error: '방에 들어가 있지 않아요' });
     reply(ack, room.submit(socket.data.playerId, text));
+  });
+
+  socket.on('prompt:skip', (_payload, ack) => {
+    const room = currentRoom();
+    if (!room) return reply(ack, { ok: false, error: '방에 들어가 있지 않아요' });
+    reply(ack, room.skip(socket.data.playerId));
   });
 
   socket.on('player:typing', ({ len } = {}) => {
@@ -121,8 +147,26 @@ io.on('connection', (socket) => {
   });
 });
 
+// 키가 있으면 서버를 켤 때 한 번 호출해서 연결이 되는지 바로 알려 준다. 끄려면 AI_SELFTEST=0
+async function selfTest() {
+  if (ai.kind !== 'gemini' || process.env.AI_SELFTEST === '0') return;
+  const r = await ai.generate('안녕이라고만 답해 줘');
+  if (r.status === 'OK') {
+    console.log(`  ✅ Gemini 연결 확인 (${r.latencyMs}ms): ${r.text.slice(0, 30)}`);
+    if (r.usage) console.log(`     토큰: 입력 ${r.usage.inTokens}, 출력 ${r.usage.outTokens}, 생각 ${r.usage.thinkTokens}${r.usage.thinkTokens > 0 ? ' ← 생각 기능이 켜져 있어요' : ''}`);
+  }
+  else console.log(`  ❌ Gemini 호출 실패: ${r.status} ${r.finishReason ?? ''} ${r.detail ?? ''}\n     → 키(GEMINI_API_KEY)와 모델 이름(GEMINI_MODEL)을 확인하세요`);
+  if (r.finishReason === 'HTTP_404') {
+    const names = (await listModels(process.env.GEMINI_API_KEY)).filter((n) => n.includes('gemini'));
+    console.log(names.length
+      ? `     → 이 키로 쓸 수 있는 모델: ${names.slice(0, 12).join(', ')}\n     → .env 의 GEMINI_MODEL= 뒤에 위 이름 중 하나(예: ${names.find((n) => n.includes('flash')) ?? names[0]})를 적고 서버를 다시 켜세요`
+      : '     → 모델 목록도 가져오지 못했어요. 키가 맞는지 확인하세요');
+  }
+}
+
 httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`\n  🏮 프롬프트 배틀 서버 실행 중`);
+  console.log(`  AI: ${ai.kind === 'gemini' ? `Gemini (${ai.model})` : '목업 (GEMINI_API_KEY 없음)'}`);
   console.log(`  ➜ 로컬:  http://localhost:${PORT}`);
   for (const nets of Object.values(networkInterfaces())) {
     for (const net of nets ?? []) {
@@ -130,4 +174,5 @@ httpServer.listen(PORT, '0.0.0.0', () => {
     }
   }
   console.log('');
+  selfTest();
 });

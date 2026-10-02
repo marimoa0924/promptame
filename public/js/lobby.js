@@ -2,6 +2,7 @@ import { session, request } from './net.js';
 import { $, $$, CHARACTERS, charSvg, toast, replay } from './ui.js';
 import { THEMES, MAP_IDS, applyTheme, sceneSvg } from './maps.js';
 import { coach } from './tutorial.js';
+import { checkNickname, nicknameError } from '/shared/nickname.js';
 
 export function initLobby({ onEnterRoom }) {
   const nickname = $('#nickname');
@@ -89,8 +90,17 @@ export function initLobby({ onEnterRoom }) {
     }
   };
 
+  // 비어 있으면 서버가 기본 이름을 붙이고, 적었다면 2~8자와 금칙어 규칙을 미리 확인한다
+  const nameOk = () => {
+    if (!profile.name) return true;
+    const nick = checkNickname(profile.name);
+    if (!nick.ok) toast(nicknameError(nick.code), 'error');
+    return nick.ok;
+  };
+
   $('#form-create').addEventListener('submit', (e) => {
     e.preventDefault();
+    if (!nameOk()) return;
     withBusy(e.currentTarget, async () => {
       const res = await request('room:create', {
         playerId: session.playerId,
@@ -106,6 +116,7 @@ export function initLobby({ onEnterRoom }) {
     e.preventDefault();
     const code = e.currentTarget.code.value.trim().toUpperCase();
     if (!code) return toast('방 코드를 입력해 주세요', 'error');
+    if (!nameOk()) return;
     withBusy(e.currentTarget, async () => {
       const res = await request('room:join', { playerId: session.playerId, profile, code });
       if (!res.ok) return toast(res.error, 'error');
