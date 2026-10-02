@@ -2,12 +2,17 @@
   "name": "promptame",
   "version": "0.1.0",
   "private": true,
-  "description": "PROMPT P.T - 실시간 1:1 프롬프트 대결 게임",
+  "description": "PROM P.T - 실시간 1:1 프롬프트 대결 게임",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
     "smoke": "node scripts/smoke.mjs",
+    "build": "node scripts/check-build.mjs",
+    "build:problems": "node build-problems.mjs",
     "test": "node --test"
   },
   "dependencies": {

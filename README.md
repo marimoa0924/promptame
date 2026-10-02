@@ -1,4 +1,4 @@
-# 🏮 PROMPT P.T (promptame)
+# 🏮 PROM P.T (promptame)
 
 AI에게 주제문을 **직접 말하지 않고** 원하는 답을 끌어내는 실시간 1:1 프롬프트 대결 게임. 로우폴리 도트 스타일.
 
@@ -8,6 +8,8 @@ AI에게 주제문을 **직접 말하지 않고** 원하는 답을 끌어내는 
 npm install
 npm run dev        # http://localhost:3000 (서버 파일 수정 시 자동 재시작, 화면은 새로고침)
 npm test           # 판정 규칙·AI 클라이언트 테스트
+npm run build      # 배포 전 점검 (서버·화면 파일, problems.json 확인)
+npm run build:problems  # 엑셀 문제 데이터 → problems.json 다시 만들기 (xlsx 필요)
 ```
 
 방 최대 개수(`MAX_ROOMS`, 기본 500)와 허용할 사이트(`ALLOWED_ORIGINS`, 프록시 뒤에서 주소가 다를 때만)는 환경변수로 바꿀 수 있어요.
