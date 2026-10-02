@@ -4,6 +4,7 @@ const KEY = 'bgm-muted';
 const VOLUME = 0.35;
 const tracks = new Map();
 let current = null;
+let currentKey = null; // current가 어느 곡(맵 이름)인지
 let wanted = null; // 지금 틀어야 하는 맵(없으면 null)
 let muted = false;
 try { muted = localStorage.getItem(KEY) === '1'; } catch { /* 저장소를 못 쓰면 켜진 채로 둔다 */ }
@@ -20,10 +21,12 @@ function audioFor(map) {
 }
 
 function apply() {
-  if (current && current !== wanted) {
+  // 같은 곡이 이미 틀어져 있으면 건드리지 않는다. (방 상태가 자주 갱신되는데 그때마다 곡을 처음부터 다시 틀면 같은 소리가 반복된다)
+  if (current && currentKey !== wanted) {
     current.pause();
     current.currentTime = 0;
     current = null;
+    currentKey = null;
   }
   if (!wanted || muted) {
     current?.pause();
@@ -31,6 +34,7 @@ function apply() {
   }
   const a = audioFor(wanted);
   current = a;
+  currentKey = wanted;
   if (a.paused) a.play().catch(() => {}); // 자동재생이 막히면 다음 상호작용 때 다시 시도된다
 }
 
