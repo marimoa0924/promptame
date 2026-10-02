@@ -77,8 +77,9 @@ export async function logout() {
 // 시작: 저장된 토큰으로 이어서 로그인하고, 안 되면 로그인 화면을 보여 준다
 export async function startAuth(onReady) {
   afterLogin = async () => {
-    // 진행 중이던 게임으로 복귀할 때는 인트로 없이 바로 넘어간다
-    if (!session.room) await playIntro();
+    // 진행 중이던 방이 있으면 화면은 재접속 처리(main.js)가 맡는다. 여기서 로비를 띄우면 게임 맵 색 그대로 로비가 보인다.
+    if (session.room) return onReady?.();
+    await playIntro();
     showScreen('screen-lobby');
     onReady?.();
   };

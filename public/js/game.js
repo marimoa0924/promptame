@@ -132,7 +132,7 @@ export class Game {
     // 한번 더 하기로 새 판이 시작되면 보드를 비운다
     if (this.prevState === 'ended' && room.state !== 'ended') this.resetBoards();
 
-    if (room.settings.map !== this.map) {
+    if (room.settings.map !== this.map || document.body.dataset.theme !== room.settings.map) {
       this.map = room.settings.map;
       applyTheme(document.body, this.map);
       for (const b of Object.values(this.boards)) b.r.scene.innerHTML = sceneSvg(this.map);

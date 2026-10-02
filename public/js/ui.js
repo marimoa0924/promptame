@@ -1,4 +1,5 @@
 import { spriteSvg } from './sprites.js';
+import { applyTheme } from './maps.js';
 
 export const CHARACTERS = {
   cat: { name: '고양이' },
@@ -22,8 +23,12 @@ export function refs(root) {
   return Object.fromEntries($$('[data-ref]', root).map((el) => [el.dataset.ref, el]));
 }
 
+// 게임 화면을 뺀 나머지(로그인·인트로·로비)는 언제나 로비 색을 쓴다
+const LOBBY_THEMED = new Set(['screen-login', 'screen-intro', 'screen-lobby']);
+
 export function showScreen(id) {
   for (const s of $$('.screen')) s.classList.toggle('active', s.id === id);
+  if (LOBBY_THEMED.has(id) && document.body.dataset.theme !== 'lobby') applyTheme(document.body, 'lobby');
 }
 
 // 애니메이션 클래스를 다시 재생
