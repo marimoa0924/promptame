@@ -13,7 +13,8 @@ import { fileURLToPath } from 'node:url';
 import { Server } from 'socket.io';
 import { Room } from './game/room.js';
 import { createAIFromEnv, listModels } from './game/gemini.js';
-import { checkNickname, nicknameError } from './nickname.js';
+import { createAccounts } from './game/accounts.js';
+import { verifyGoogleIdToken, GoogleAuthError } from './game/googleAuth.js';
 import { createJsonStore } from './game/jsonStore.js';
 import { createSeen } from './game/seen.js';
 import { createRanking } from './game/ranking.js';
@@ -30,9 +31,15 @@ process.on('exit', () => store.flush());
 for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => process.exit(0));
 const seen = createSeen(store);
 const ranking = createRanking(store);
+// 처음 4종은 모두 쓸 수 있고, 나머지는 상점이나 뽑기로 얻는다
+const accounts = createAccounts(store, { ranking, seen, characters: CHARACTERS, starters: CHARACTERS.slice(0, 4) });
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+// 계정이 생기기 전 기기 ID(브라우저 저장값). 이 값으로 쌓인 랭킹은 처음 로그인할 때 계정으로 옮겨 준다
 const validDevice = (d) => (typeof d === 'string' && d.length >= 8 && d.length <= 64 ? d : null);
 const app = express();
 app.get('/favicon.ico', (_req, res) => res.status(204).end());
+// 화면이 구글 로그인 버튼을 그릴 때 쓰는 공개 설정(클라이언트 ID는 비밀이 아니다)
+app.get('/config.json', (_req, res) => res.json({ googleClientId: GOOGLE_CLIENT_ID }));
 app.use(express.static('public'));
 // 금지어 검사 규칙은 서버와 같은 파일을 브라우저에서도 쓴다
 for (const file of ['promptRules.js', 'nickname.js']) {
@@ -62,6 +69,28 @@ const MAX_ROOMS = Number(process.env.MAX_ROOMS) || 500;
 
 const rooms = new Map();
 
+// 접속할 때 보낸 로그인 토큰이 맞으면 그 계정으로 이어 준다(새로고침, 재접속). 없거나 틀리면 로그인 전 상태로 둔다.
+io.use((socket, next) => {
+  const acc = accounts.byToken(socket.handshake.auth?.token);
+  if (acc) {
+    socket.data.accountId = acc.id;
+    accounts.touch(acc);
+  }
+  next();
+});
+
+// 게스트 계정을 마구 만드는 것을 막는다: 같은 주소에서 1분에 5개까지
+const guestLog = new Map();
+function guestAllowed(socket) {
+  const ip = String(socket.handshake.headers['x-forwarded-for'] ?? '').split(',')[0].trim() || socket.handshake.address;
+  const t = Date.now();
+  const list = (guestLog.get(ip) ?? []).filter((x) => t - x < 60_000);
+  if (list.length >= 5) return false;
+  list.push(t);
+  guestLog.set(ip, list);
+  return true;
+}
+
 function newCode() {
   let code;
   do {
@@ -72,18 +101,8 @@ function newCode() {
 
 const pick = (value, allowed, fallback) => (allowed.includes(value) ? value : fallback);
 
-const DEFAULT_NAME = '익명의 고수';
-
-// 닉네임이 비어 있으면 기본 이름을 쓰고, 있으면 2~8자와 금칙어 규칙을 지켜야 한다.
-function cleanProfile(profile = {}) {
-  const raw = String(profile.name ?? '').trim();
-  const char = pick(profile.char, CHARACTERS, 'cat');
-  const device = validDevice(profile.device);
-  if (!raw) return { ok: true, profile: { name: DEFAULT_NAME, char, device } };
-  const nick = checkNickname(raw);
-  if (!nick.ok) return { ok: false, error: nicknameError(nick.code) };
-  return { ok: true, profile: { name: nick.name, char, device } };
-}
+// 방에 들어갈 때의 이름, 캐릭터는 로그인한 계정의 것을 쓴다(클라이언트가 보낸 값은 믿지 않는다). device는 계정 번호다.
+const profileOf = (acc) => ({ name: acc.nickname, char: acc.char, device: acc.id });
 
 function cleanSettings(s = {}) {
   if (s.tutorial) {
@@ -117,27 +136,114 @@ io.on('connection', (socket) => {
   });
 
   const currentRoom = () => rooms.get(socket.data.roomCode);
+  // 로그인한 계정. 삭제된 계정이면 로그인이 풀린 것으로 본다.
+  const me = () => {
+    const acc = socket.data.accountId && accounts.get(socket.data.accountId);
+    return acc || null;
+  };
+  const NEED_LOGIN = { ok: false, error: '로그인이 필요해요', code: 'AUTH' };
+  const signedIn = (acc, token, extra = {}) => {
+    socket.data.accountId = acc.id;
+    return { ok: true, token, account: accounts.view(acc), ...extra };
+  };
 
-  socket.on('room:create', ({ playerId, profile, settings } = {}, ack) => {
+  // ---------- 로그인 ----------
+  socket.on('auth:me', (_p, ack) => {
+    const acc = me();
+    reply(ack, acc ? { ok: true, account: accounts.view(acc), googleEnabled: !!GOOGLE_CLIENT_ID } : { ok: false, googleEnabled: !!GOOGLE_CLIENT_ID });
+  });
+
+  socket.on('auth:guest', ({ legacyDevice } = {}, ack) => {
+    if (!guestAllowed(socket)) return reply(ack, { ok: false, error: '잠시 뒤에 다시 시도해 주세요' });
+    const r = accounts.createGuest({ legacyDevice: validDevice(legacyDevice) });
+    reply(ack, r.ok ? signedIn(r.account, r.token) : r);
+  });
+
+  socket.on('auth:google', async ({ credential, legacyDevice } = {}, ack) => {
+    try {
+      const g = await verifyGoogleIdToken(credential, { clientId: GOOGLE_CLIENT_ID });
+      const r = accounts.loginGoogle(g, { current: me(), legacyDevice: validDevice(legacyDevice) });
+      reply(ack, r.ok ? signedIn(r.account, r.token, { linked: r.linked, switched: r.switched }) : r);
+    } catch (err) {
+      reply(ack, { ok: false, error: err instanceof GoogleAuthError ? err.message : '구글 로그인에 실패했어요' });
+    }
+  });
+
+  socket.on('auth:logout', ({ token } = {}, ack) => {
+    accounts.logout(token);
+    socket.data.accountId = null;
+    currentRoom()?.leave(socket.data.playerId);
+    socket.data.roomCode = null;
+    reply(ack, { ok: true });
+  });
+
+  // ---------- 내 계정 ----------
+  socket.on('account:get', (_p, ack) => {
+    const acc = me();
+    reply(ack, acc ? { ok: true, ...accounts.report(acc) } : NEED_LOGIN);
+  });
+
+  socket.on('account:update', (payload = {}, ack) => {
+    const acc = me();
+    if (!acc) return reply(ack, NEED_LOGIN);
+    const r = accounts.update(acc, { nickname: payload.nickname, char: payload.char });
+    reply(ack, r.ok ? { ok: true, account: accounts.view(acc) } : r);
+  });
+
+  socket.on('shop:buy', ({ char } = {}, ack) => {
+    const acc = me();
+    if (!acc) return reply(ack, NEED_LOGIN);
+    const r = accounts.buy(acc, char);
+    reply(ack, r.ok ? { ...r, account: accounts.view(acc) } : r);
+  });
+
+  socket.on('shop:gacha', (_p, ack) => {
+    const acc = me();
+    if (!acc) return reply(ack, NEED_LOGIN);
+    const r = accounts.gacha(acc);
+    reply(ack, r.ok ? { ...r, account: accounts.view(acc) } : r);
+  });
+
+  socket.on('account:clearHistory', (_p, ack) => {
+    const acc = me();
+    if (!acc) return reply(ack, NEED_LOGIN);
+    accounts.clearHistory(acc);
+    reply(ack, { ok: true });
+  });
+
+  socket.on('account:delete', (_p, ack) => {
+    const acc = me();
+    if (!acc) return reply(ack, NEED_LOGIN);
+    currentRoom()?.leave(socket.data.playerId);
+    socket.data.roomCode = null;
+    accounts.remove(acc);
+    socket.data.accountId = null;
+    reply(ack, { ok: true });
+  });
+
+  // ---------- 방 ----------
+  socket.on('room:create', ({ playerId, settings } = {}, ack) => {
+    const acc = me();
+    if (!acc) return reply(ack, NEED_LOGIN);
     if (!validId(playerId)) return reply(ack, { ok: false, error: '잘못된 요청이에요' });
-    const who = cleanProfile(profile);
-    if (!who.ok) return reply(ack, who);
     currentRoom()?.leave(socket.data.playerId);
     if (rooms.size >= MAX_ROOMS) return reply(ack, { ok: false, error: '지금은 방을 더 만들 수 없어요. 잠시 후 다시 시도해 주세요' });
     const code = newCode();
-    const room = new Room(io, code, cleanSettings(settings), (c) => rooms.delete(c), ai, {}, { seen, ranking });
+    const room = new Room(io, code, cleanSettings(settings), (c) => rooms.delete(c), ai, {}, { seen, ranking, accounts });
     rooms.set(code, room);
-    reply(ack, room.join(socket, playerId, who.profile));
+    reply(ack, room.join(socket, playerId, profileOf(acc)));
   });
 
-  socket.on('room:join', ({ playerId, profile, code } = {}, ack) => {
+  socket.on('room:join', ({ playerId, code } = {}, ack) => {
+    const acc = me();
+    if (!acc) return reply(ack, NEED_LOGIN);
     if (!validId(playerId)) return reply(ack, { ok: false, error: '잘못된 요청이에요' });
     const room = rooms.get(String(code ?? '').replace(/[^0-9a-z]/gi, '').toUpperCase());
     if (!room) return reply(ack, { ok: false, error: '방을 찾을 수 없어요' });
-    // 이미 방에 있던 사람의 재접속은 닉네임을 다시 검사하지 않는다
-    const who = room.players.has(playerId) ? { ok: true, profile: {} } : cleanProfile(profile);
-    if (!who.ok) return reply(ack, who);
-    reply(ack, room.join(socket, playerId, who.profile));
+    // 이미 방에 있던 playerId로 다시 들어올 때는 같은 계정이어야 한다(남의 자리를 가로채지 못하게)
+    const existing = room.players.get(playerId);
+    if (existing && existing.device !== acc.id) return reply(ack, { ok: false, error: '이 방의 다른 사람 자리예요' });
+    reply(ack, room.join(socket, playerId, profileOf(acc)));
   });
 
   socket.on('room:leave', (_payload, ack) => {
@@ -161,8 +267,8 @@ io.on('connection', (socket) => {
   });
 
   // 랭킹 상위 목록과 내 순위
-  socket.on('ranking:get', ({ device } = {}, ack) => {
-    reply(ack, { ok: true, top: ranking.top(20), me: ranking.me(validDevice(device)) });
+  socket.on('ranking:get', (_p, ack) => {
+    reply(ack, { ok: true, top: ranking.top(20), me: me() ? ranking.me(me().id) : null });
   });
 
   socket.on('prompt:submit', ({ text } = {}, ack) => {

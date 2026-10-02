@@ -5,6 +5,7 @@ import { Room } from './room.js';
 import { createJsonStore } from './jsonStore.js';
 import { createSeen } from './seen.js';
 import { createRanking } from './ranking.js';
+import { createAccounts, ECON } from './accounts.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const rooms = [];
@@ -393,4 +394,55 @@ test('한 번 더 하기 요청은 시간 안에 응답이 없으면 취소된�
   c.room.rematch('pA'); // 다시 요청할 수 있다
   c.room.rematch('pB');
   assert.equal(c.room.state, 'countdown');
+});
+
+test('판이 끝나면 계정별 성적, 프롬프트 기록, 재화가 정산되어 결과에 실린다', async () => {
+  const store = createJsonStore(null);
+  const ranking = createRanking(store);
+  const seen = createSeen(store);
+  const accounts = createAccounts(store, { ranking, seen });
+  const a = accounts.createGuest({ nickname: '에이' }).account;
+  const b = accounts.createGuest({ nickname: '비이' }).account;
+  const c = setup({ hooks: { seen, ranking, accounts }, devices: { pA: a.id, pB: b.id }, settings: { timeLimit: 0.6 } });
+  await playing(c);
+  c.room.submit('pA', '엉뚱한 말'); // RETRY
+  await answered(c);
+  for (let i = 0; i < 3; i++) {
+    c.room.submit('pA', '나는 교사야 XQZ1');
+    await answered(c);
+  }
+  await until(() => c.room.state === 'ended');
+  const end = c.events('game:end').at(-1).payload;
+  assert.equal(end.rewards.pA.coins, ECON.WIN + 3);
+  assert.equal(end.rewards.pB.coins, ECON.LOSS);
+  assert.equal(a.coins, ECON.START_COINS + ECON.WIN + 3);
+  assert.deepEqual([a.stats.games, a.stats.wins, a.stats.passes, a.stats.retries], [1, 1, 3, 1]);
+  assert.equal(a.stats.firstTry, 2); // 첫 문제는 RETRY 뒤 PASS라서 한 번에 맞힌 것은 2개
+  assert.equal(a.stats.bestStreak, 2);
+  assert.equal(a.habit.length, 4);
+  assert.ok(a.habit.some((e) => e.f.includes('role')));
+  assert.equal(a.games[0].vs, '비이');
+  assert.equal(b.stats.losses, 1);
+});
+
+test('연습봇과 한 판은 성적과 프롬프트 기록은 남기고 재화와 랭킹은 없다', async () => {
+  const store = createJsonStore(null);
+  const hooks = { seen: createSeen(store), ranking: createRanking(store) };
+  hooks.accounts = createAccounts(store, hooks);
+  const a = hooks.accounts.createGuest({ nickname: '에이' }).account;
+  const log = [];
+  const io = { to: () => ({ emit: (ev, p) => log.push({ ev, p }) }), in: () => ({ socketsLeave() {} }) };
+  const room = new Room(io, 'BOT111', { difficulty: 'easy', timeLimit: 0.4, promptLimit: 100, map: 'east', title: 't' }, () => {}, fakeAI(), FAST, hooks);
+  rooms.push(room);
+  room.join({ id: 's', join() {}, data: {} }, 'pA', { name: '에이', char: 'cat', device: a.id });
+  room.addBot();
+  await until(() => room.state === 'playing');
+  room.submit('pA', 'XQZ1');
+  await until(() => room.state === 'ended');
+  const end = log.filter((l) => l.ev === 'game:end').at(-1).p;
+  assert.equal(end.rewards.pA.coins, 0);
+  assert.equal(end.ranking, undefined);
+  assert.equal(a.stats.botGames, 1);
+  assert.ok(a.habit.length >= 1);
+  assert.equal(hooks.ranking.top().length, 0);
 });

@@ -30,7 +30,7 @@ export function tierOf(rp) {
 }
 
 const NOT_COUNTED = {
-  'same-device': '같은 기기끼리 한 판이에요',
+  'same-device': '같은 계정끼리 한 판이에요',
   'low-activity': 'PASS가 너무 적은 판이에요',
   'pair-limit': '같은 상대와 너무 자주 했어요',
 };
@@ -100,6 +100,22 @@ export function createRanking(store, now = () => Date.now()) {
     return result;
   }
 
+  // 계정이 생기기 전 기기 ID로 쌓인 기록을 계정으로 옮긴다. 계정에 이미 기록이 있으면 건드리지 않는다.
+  function adopt(fromId, toId) {
+    if (!fromId || fromId === toId || !root.players[fromId] || root.players[toId]) return false;
+    root.players[toId] = root.players[fromId];
+    delete root.players[fromId];
+    store.save();
+    return true;
+  }
+
+  function remove(id) {
+    if (root.players[id]) {
+      delete root.players[id];
+      store.save();
+    }
+  }
+
   const sorted = () =>
     Object.entries(root.players)
       .filter(([, r]) => r.games > 0)
@@ -107,6 +123,8 @@ export function createRanking(store, now = () => Date.now()) {
 
   return {
     record,
+    adopt,
+    remove,
     top(n = 20) {
       return sorted()
         .slice(0, n)

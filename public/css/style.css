@@ -670,3 +670,56 @@ body.shake { animation: shake 0.12s steps(2) 5; }
 .history-item details { margin-top: 4px; opacity: 0.9; }
 .history-item details p { white-space: pre-wrap; margin: 4px 0 0; }
 .finale-card.void .result-title { color: var(--muted); }
+
+/* 로그인, 계정, 내 기록, 상점 */
+.login-panel { width: min(420px, 94vw); margin: 0 auto; text-align: center; }
+.login-google { display: flex; justify-content: center; min-height: 44px; margin-bottom: 4px; }
+.login-or { margin: 10px 0; opacity: 0.7; }
+.login-note { font-size: 0.8rem; margin: 14px 0 0; }
+.account-chip { margin: 8px 0 0; font-weight: 700; min-height: 1.3em; }
+.char-tile { position: relative; }
+.char-tile.locked { opacity: 0.55; }
+.char-tile.locked .char-icon { filter: grayscale(1); }
+.char-lock { position: absolute; right: 10px; top: 8px; }
+.profile-card, .shop-card-wrap { width: min(620px, 96vw); max-height: 90vh; display: flex; flex-direction: column; text-align: left; }
+.profile-body { overflow-y: auto; flex: 1; padding: 0 4px; margin-bottom: 12px; }
+.pf-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; margin-bottom: 8px; }
+.pf-head strong { font-size: 1.2rem; }
+.pf-badge { padding: 0 8px; background: var(--accent); color: var(--on-accent); font-size: 0.75rem; }
+.pf-sub { opacity: 0.8; }
+.pf-section { margin: 14px 0; padding-top: 10px; border-top: 2px dashed color-mix(in srgb, var(--ink) 25%, transparent); }
+.pf-section h3 { margin: 0 0 8px; }
+.pf-section h4 { margin: 12px 0 6px; font-size: 0.9rem; }
+.pf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; }
+.pf-grid div { padding: 8px; background: var(--paper); box-shadow: var(--frame-sm); text-align: center; }
+.pf-grid dt { font-size: 0.75rem; opacity: 0.75; }
+.pf-grid dd { margin: 2px 0 0; font-weight: 700; }
+.pf-type { padding: 10px 12px; background: var(--paper); box-shadow: var(--frame-sm); }
+.pf-type p { margin: 4px 0 0; }
+.pf-bar { display: grid; grid-template-columns: 9em 1fr 9.5em; gap: 8px; align-items: center; font-size: 0.82rem; margin: 3px 0; }
+.pf-bar .track { height: 10px; background: color-mix(in srgb, var(--ink) 15%, transparent); }
+.pf-bar .fill { display: block; height: 100%; background: var(--accent); }
+.pf-bar .val { text-align: right; opacity: 0.85; }
+.pf-tips { margin: 0; padding-left: 1.2em; }
+.pf-tips li { margin: 4px 0; }
+.pf-game { display: grid; grid-template-columns: 2em 1fr auto; gap: 8px; align-items: center; padding: 5px 0; }
+.pf-out { text-align: center; font-weight: 700; color: #fff; background: var(--muted, #888); }
+.pf-out.win { background: var(--accent); }
+.pf-out.loss { background: var(--bsod, #1d4ed8); }
+.pf-prompt { display: flex; gap: 8px; margin: 4px 0; font-size: 0.85rem; }
+.pf-prompt .badge { padding: 0 6px; font-weight: 700; color: #fff; background: var(--accent); height: fit-content; }
+.pf-prompt .badge.fail { background: var(--bsod, #1d4ed8); }
+.pf-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.pf-google { margin: 8px 0; }
+.small { font-size: 0.78rem; }
+.shop-coins { margin: 0 0 8px; font-weight: 700; font-size: 1.1rem; }
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; overflow-y: auto; max-height: 46vh; padding: 2px; }
+.shop-card { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px; background: var(--paper); box-shadow: var(--frame-sm); }
+.shop-card .char-icon svg { width: 56px; height: 56px; }
+.shop-card:not(.owned) .char-icon { filter: grayscale(0.6); }
+.shop-own { font-size: 0.78rem; opacity: 0.8; }
+.shop-gacha { margin: 12px 0 6px; text-align: center; }
+.reveal { position: absolute; inset: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--ink) 70%, transparent); }
+.reveal-card { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 22px 30px; background: var(--c1); box-shadow: var(--frame), var(--drop); animation: pop 0.4s steps(4); }
+.reveal-card .char-icon svg { width: 96px; height: 96px; }
+.shop-card-wrap { position: relative; }

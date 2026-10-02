@@ -1,6 +1,7 @@
 // 소켓 연결 + 세션. 모든 요청은 Promise로 감싸서 UI가 응답을 기다리며 멈추지 않게 한다.
 /* global io */
-export const socket = io({ transports: ['websocket', 'polling'] });
+// 로그인 토큰은 접속할 때마다 함께 보낸다(새로고침, 재접속해도 같은 계정으로 이어진다). 함수로 줘서 접속 때마다 최신 값을 읽는다.
+export const socket = io({ transports: ['websocket', 'polling'], auth: (cb) => cb({ token: tokenStore.get() || undefined }) });
 
 const uid = () =>
   globalThis.crypto?.randomUUID?.() ?? `p-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
@@ -28,6 +29,7 @@ function stored(storage, key) {
 }
 
 const pidStore = stored(sessionStorage, 'promptame.pid');
+export const tokenStore = stored(localStorage, 'promptame.token');
 const roomStore = stored(sessionStorage, 'promptame.room');
 const profileStore = stored(localStorage, 'promptame.profile');
 // 기기 ID: 탭을 닫아도 남는다. 랭킹과 '본 문제' 기록이 이 값을 기준으로 쌓인다. (탭마다 다른 playerId와는 별개)

@@ -89,6 +89,8 @@ export class Finale {
     ];
     if (opp) rows.push([`${opp.name}`, `${opp.score} PASS`]);
     rows.push(['결과', { win: '승리', lose: '패배', draw: '무승부', void: '무효' }[outcome]]);
+    const rw = result.rewards?.[meId];
+    if (rw) rows.push(rw.coins || !rw.note ? ['재화', `${rw.coins >= 0 ? '+' : ''}${rw.coins} 🪙 (총 ${rw.total})`] : ['재화', rw.note]);
     const rk = result.ranking?.[meId];
     if (rk) {
       rows.push(rk.counted

@@ -2,6 +2,9 @@ import { socket, session, request } from './net.js';
 import { $, showScreen, toast, confirmDialog } from './ui.js';
 import { initLobby } from './lobby.js';
 import { initRanking } from './ranking.js';
+import { startAuth, onAccount, setAccount, logout } from './auth.js';
+import { initProfile } from './profile.js';
+import { initShop } from './shop.js';
 import { Game } from './game.js';
 import { Finale } from './finale.js';
 import { applyTheme } from './maps.js';
@@ -13,9 +16,22 @@ applyTheme(document.body, 'lobby');
 
 const game = new Game();
 const finale = new Finale({ onLeave: leaveRoom, onRematch: rematch });
-const lobby = initLobby({ onEnterRoom: enterRoom });
+const shop = initShop();
+const lobby = initLobby({ onEnterRoom: enterRoom, onOpenShop: () => shop.open() });
 const ranking = initRanking();
-ranking.refresh();
+initProfile();
+
+// 계정 정보가 바뀔 때마다(로그인, 상점, 경기 정산) 로비 화면을 맞춘다
+function refreshAccount() {
+  return request('auth:me').then((r) => r.ok && setAccount(r.account));
+}
+onAccount((acc) => {
+  lobby.applyAccount(acc);
+  const rk = acc?.rank ? `${acc.rank.tier.name} ${acc.rank.rp}RP` : '랭킹 기록 없음';
+  $('#account-chip').textContent = acc ? `${acc.nickname} · 🪙 ${acc.coins} · 🏆 ${rk} · ${acc.kind === 'google' ? '구글 계정' : '게스트 계정'}` : '';
+  shop.render();
+});
+$('#btn-logout').addEventListener('click', logout);
 let tutorialStarted = false;
 
 function enterRoom(room) {
@@ -31,7 +47,8 @@ function enterRoom(room) {
 }
 
 function toLobby() {
-  ranking.refresh(); // 방금 끝난 판의 랭크 점수를 반영한다
+  ranking.refresh(); // 방금 끝난 판의 랭크 점수와 재화를 반영한다
+  refreshAccount();
   session.room = null;
   coach.stop();
   finale.hide();
@@ -146,3 +163,6 @@ try {
 } catch {
   $('#btn-tutorial').classList.add('blink');
 }
+
+// 로그인부터 시작한다(저장된 토큰이 있으면 바로 로비로)
+startAuth(() => ranking.refresh());

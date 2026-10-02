@@ -6,7 +6,7 @@ import { io } from 'socket.io-client';
 const URL = process.env.URL ?? 'http://localhost:3000';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const ask = (s, ev, payload) => s.timeout(5000).emitWithAck(ev, payload);
-const connect = () => new Promise((r) => { const s = io(URL, { transports: ['websocket'] }); s.on('connect', () => r(s)); });
+const connect = (token) => new Promise((r) => { const s = io(URL, { transports: ['websocket'], auth: token ? { token } : {} }); s.on('connect', () => r(s)); });
 
 const a = await connect();
 const b = await connect();
@@ -29,15 +29,21 @@ console.log('폭주 제한:', burst.filter((x) => x.ok).length, '건 처리,', b
 await sleep(1100);
 
 // ---- 1) 사람 대 사람 ----
-console.log('bad nickname:', (await ask(a, 'room:create', { playerId: 'player-XXXX', profile: { name: '씨발', char: 'cat' }, settings: {} })).error);
-console.log('long nickname:', (await ask(a, 'room:create', { playerId: 'player-XXXX', profile: { name: '가나다라마바사아자', char: 'cat' }, settings: {} })).error);
+console.log('로그인 없이 방 만들기:', (await ask(a, 'room:create', { playerId: 'player-XXXX', settings: {} })).code);
+const ga = await ask(a, 'auth:guest', {});
+const gb = await ask(b, 'auth:guest', {});
+console.log('guest login:', ga.ok, gb.ok, ga.account.coins, '| char 잠금:', (await ask(a, 'account:update', { char: 'miku' })).error);
+console.log('bad nickname:', (await ask(a, 'account:update', { nickname: '씨발' })).error);
+console.log('long nickname:', (await ask(a, 'account:update', { nickname: '가나다라마바사아자' })).error);
+await ask(a, 'account:update', { nickname: '냥이' });
+await ask(b, 'account:update', { nickname: '멍멍' });
 const created = await ask(a, 'room:create', {
-  playerId: 'player-AAAA', profile: { name: '냥이', char: 'cat' },
+  playerId: 'player-AAAA',
   settings: { title: '테스트', difficulty: 'normal', map: 'space', timeLimit: 120, promptLimit: 100 },
 });
 console.log('create', created.ok, created.room.code, created.room.settings.map);
 const code = created.room.code;
-const joined = await ask(b, 'room:join', { playerId: 'player-BBBB', profile: { name: '멍멍', char: 'dog' }, code });
+const joined = await ask(b, 'room:join', { playerId: 'player-BBBB', code });
 console.log('join', joined.ok, joined.room.state);
 await sleep(3800);
 console.log('state after countdown:', lastState.state);
@@ -66,8 +72,12 @@ console.log('skip again while paused:', (await ask(a, 'prompt:skip')).error);
 b.disconnect();
 await sleep(300);
 console.log('B connected?', lastState.players.find((p) => p.id === 'player-BBBB').connected);
-const b2 = await connect();
-const rejoin = await ask(b2, 'room:join', { playerId: 'player-BBBB', profile: {}, code });
+const b2 = await connect(gb.token); // 토큰으로 다시 접속하면 같은 계정으로 이어진다
+const rejoin = await ask(b2, 'room:join', { playerId: 'player-BBBB', code });
+const thief = await connect();
+await ask(thief, 'auth:guest', {});
+console.log('남의 자리 가로채기:', (await ask(thief, 'room:join', { playerId: 'player-BBBB', code })).error);
+thief.close();
 console.log('rejoin', rejoin.ok, rejoin.room.state);
 
 // 기권 → 상대에게 game:end, 방은 결과 화면 상태로 남는다

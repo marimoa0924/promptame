@@ -6,6 +6,18 @@ export function createSeen(store) {
   const seen = (store.data.seen ??= {});
   return {
     ids: (device) => (device ? [...(seen[device] ?? [])] : []),
+    adopt(fromId, toId) {
+      if (!fromId || fromId === toId || !seen[fromId] || seen[toId]) return;
+      seen[toId] = seen[fromId];
+      delete seen[fromId];
+      store.save();
+    },
+    remove(id) {
+      if (seen[id]) {
+        delete seen[id];
+        store.save();
+      }
+    },
     add(device, ids) {
       if (!device || !ids.length) return;
       const merged = [...(seen[device] ?? []).filter((id) => !ids.includes(id)), ...ids].slice(-MAX_PER_DEVICE);

@@ -161,6 +161,8 @@ export class Room {
       busy: false,
       frozenUntil: 0,
       frozenKind: null,
+      firstTry: 0, // 한 번에 맞힌 문제 수
+      bestStreak: 0,
       lastSubmitAt: 0,
       log: [], // 이번 판에서 보낸 프롬프트와 결과. 판이 끝난 뒤 결과 화면에서 공개한다
       device: isBot ? null : (profile.device ?? null), // 랭킹과 본 문제 기록에 쓰는 기기 ID. 밖으로 보내지 않는다
@@ -377,13 +379,15 @@ export class Room {
     if (!alive()) return;
 
     const result = { pass: verdict.pass, reason: verdictReason(verdict) };
-    p.log.push({ topic: problem.topic, attempt: p.attempts, prompt, answer: answer.slice(0, LOG_ANSWER_MAX), pass: result.pass, reason: result.reason });
+    p.log.push({ topic: problem.topic, difficulty: problem.difficulty, attempt: p.attempts, prompt, answer: answer.slice(0, LOG_ANSWER_MAX), pass: result.pass, reasons: verdict.reasons, reason: result.reason });
     if (p.log.length > LOG_MAX) p.log.shift();
     p.live.phase = 'done';
     p.live.result = result;
     if (result.pass) {
       p.score += 1;
+      if (p.attempts === 1) p.firstTry += 1;
       p.streak = p.attempts === 1 ? p.streak + 1 : 0;
+      p.bestStreak = Math.max(p.bestStreak, p.streak);
       p.topicIdx += 1;
       p.attempts = 0;
       if (p.streak >= STREAK_FOR_FREEZE) {
@@ -462,17 +466,30 @@ export class Room {
     this.broadcast();
   }
 
-  // 본 문제 기록과 랭킹을 남긴다. 튜토리얼과 연습봇 판은 랭킹에 넣지 않는다.
+  // 본 문제 기록, 랭킹, 계정별 성적·재화를 남긴다. 튜토리얼은 아무것도 남기지 않는다.
   recordHistory(reason, winnerId, leaverId, players) {
     if (this.settings.tutorial) return;
     for (const p of players) {
       if (p.device) this.hooks.seen?.add(p.device, this.sequence.slice(0, p.topicIdx + 1).map((x) => x.problem.id));
     }
     const humans = players.filter((p) => !p.isBot);
-    if (reason === 'aborted' || humans.length !== 2 || players.length !== 2 || !this.hooks.ranking) return;
-    const [a, b] = humans.map((p) => ({ id: p.id, device: p.device, name: p.name, char: p.char, score: p.score }));
-    const ranking = this.hooks.ranking.record({ reason, winnerId, leaverId, a, b });
-    if (ranking) this.lastResult.ranking = ranking;
+    let ranking = null;
+    if (reason !== 'aborted' && humans.length === 2 && players.length === 2 && this.hooks.ranking) {
+      const [a, b] = humans.map((p) => ({ id: p.id, device: p.device, name: p.name, char: p.char, score: p.score }));
+      ranking = this.hooks.ranking.record({ reason, winnerId, leaverId, a, b });
+      if (ranking) this.lastResult.ranking = ranking;
+    }
+    // device는 로그인한 계정 번호다
+    const rewards = this.hooks.accounts?.settle({
+      reason,
+      winnerId,
+      leaverId,
+      vsBot: players.some((p) => p.isBot),
+      difficulty: DIFFICULTY_KO[this.settings.difficulty],
+      ranking,
+      players: players.map((p) => ({ id: p.id, accountId: p.device, name: p.name, score: p.score, firstTry: p.firstTry, bestStreak: p.bestStreak, log: p.log })),
+    });
+    if (rewards && Object.keys(rewards).length) this.lastResult.rewards = rewards;
   }
 
   // ---------- 한번 더 하기 ----------
@@ -513,7 +530,7 @@ export class Room {
     this.sequence = this.pickSequence();
     this.startedAt = this.endsAt = null;
     for (const p of all) {
-      Object.assign(p, { ready: false, score: 0, streak: 0, attempts: 0, topicIdx: 0, busy: false, frozenUntil: 0, frozenKind: null, lastSubmitAt: 0, log: [], live: null });
+      Object.assign(p, { ready: false, score: 0, streak: 0, attempts: 0, topicIdx: 0, busy: false, frozenUntil: 0, frozenKind: null, firstTry: 0, bestStreak: 0, lastSubmitAt: 0, log: [], live: null });
     }
     if (all.length >= this.capacity) {
       this.startCountdown();

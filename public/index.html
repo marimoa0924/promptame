@@ -14,14 +14,34 @@
   <!-- 서버 연결 상태: 화면은 멈추지 않고 배너만 뜬다 -->
   <div id="net-banner" class="net-banner" hidden>서버와 연결이 끊겼어요. 다시 연결하는 중<span class="dots"></span></div>
 
+  <!-- ================= 로그인 ================= -->
+  <section id="screen-login" class="screen active">
+    <header class="lobby-title">
+      <p class="eyebrow">✦ PROMPT BATTLE ✦</p>
+      <h1>프롬프트 배틀</h1>
+      <p class="tagline">말은 조리 있게, 근거는 명확하게! AI에게서 정답을 끌어내세요</p>
+    </header>
+    <article class="panel login-panel">
+      <h2 class="panel-title">시작하기</h2>
+      <div id="google-login" class="login-google"></div>
+      <p class="login-or">또는</p>
+      <button class="btn btn-primary btn-block" id="btn-guest">게스트로 시작</button>
+      <p class="muted login-note">로그인하면 성적, 랭킹, 재화, 캐릭터, 프롬프트 작성 습관 분석이 계정에 쌓여요. 게스트 계정은 이 브라우저에만 저장되니, 나중에 구글 계정과 연결해 두면 기록을 잃지 않아요.</p>
+    </article>
+  </section>
+
   <!-- ================= 로비 ================= -->
-  <section id="screen-lobby" class="screen active">
+  <section id="screen-lobby" class="screen">
     <header class="lobby-title">
       <p class="eyebrow">✦ PROMPT BATTLE ✦</p>
       <h1>프롬프트 배틀</h1>
       <p class="tagline">말은 조리 있게, 근거는 명확하게! AI에게서 정답을 끌어내세요</p>
       <button class="btn btn-accent2" id="btn-tutorial">📘 처음이라면? 튜토리얼</button>
       <button class="btn" id="btn-ranking">🏆 랭킹</button>
+      <button class="btn" id="btn-profile">📊 내 기록</button>
+      <button class="btn" id="btn-shop">🪙 상점·뽑기</button>
+      <button class="btn btn-ghost" id="btn-logout">로그아웃</button>
+      <p class="account-chip" id="account-chip"></p>
     </header>
 
     <div class="lobby-grid">
@@ -219,6 +239,31 @@
       <p class="ranking-me" data-ref="me"></p>
       <ol class="ranking-list" data-ref="list"></ol>
       <p class="muted ranking-rules" data-ref="rules">승리 +25 · 무승부 +5 · 패배 -10 · 포기 -15 (상대 포기로 이기면 +12). PASS가 너무 적은 판과 같은 상대와 1시간에 5판 넘게 한 판은 반영되지 않아요. 이 브라우저(기기)를 기준으로 쌓여요.</p>
+      <div class="modal-actions"><button class="btn" data-ref="close">닫기</button></div>
+    </div>
+  </div>
+
+  <!-- 내 기록 -->
+  <div class="modal" id="modal-profile" hidden>
+    <div class="modal-card profile-card">
+      <h2 class="panel-title">내 기록</h2>
+      <div class="profile-body" data-ref="body"></div>
+      <div class="modal-actions"><button class="btn" data-ref="close">닫기</button></div>
+    </div>
+  </div>
+
+  <!-- 상점·뽑기 -->
+  <div class="modal" id="modal-shop" hidden>
+    <div class="modal-card shop-card-wrap">
+      <h2 class="panel-title">상점·뽑기</h2>
+      <p class="shop-coins" data-ref="coins"></p>
+      <div class="shop-grid" data-ref="grid"></div>
+      <div class="shop-gacha">
+        <button class="btn btn-primary" data-ref="gacha">🎲 뽑기</button>
+        <p class="muted small" data-ref="odds"></p>
+      </div>
+      <p class="muted small">경기에서 번 재화로 얻어요. 사람과 한 판을 끝내면 이기면 +30, 비기면 +15, 지면 +10과 PASS 보너스를 받아요(하루 10판까지). 연습봇과 한 판은 재화가 없어요.</p>
+      <div class="reveal" data-ref="reveal" hidden></div>
       <div class="modal-actions"><button class="btn" data-ref="close">닫기</button></div>
     </div>
   </div>

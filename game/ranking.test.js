@@ -38,6 +38,7 @@ test('반영하지 않는 판: 같은 기기, PASS가 너무 적음, 같은 상�
   const r = mk();
   let res = r.record({ reason: 'timeup', winnerId: 'pa', a: A(3), b: B(0, { device: 'devA-0001' }) });
   assert.equal(res.pa.counted, false);
+  assert.equal(res.pa.note, '같은 계정끼리 한 판이에요');
   res = r.record({ reason: 'timeup', winnerId: 'pa', a: A(1), b: B(0) });
   assert.equal(res.pa.counted, false);
   assert.equal(res.pa.note, 'PASS가 너무 적은 판이에요');

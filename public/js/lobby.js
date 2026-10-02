@@ -3,19 +3,31 @@ import { $, $$, CHARACTERS, charSvg, toast, replay } from './ui.js';
 import { THEMES, MAP_IDS, applyTheme, sceneSvg } from './maps.js';
 import { coach } from './tutorial.js';
 import { checkNickname, nicknameError } from '/shared/nickname.js';
+import { setAccount } from './auth.js';
 
-export function initLobby({ onEnterRoom }) {
+export function initLobby({ onEnterRoom, onOpenShop }) {
   const nickname = $('#nickname');
   const grid = $('#char-grid');
   const picked = $('#char-picked');
-  let profile = session.profile;
+  // 이름과 캐릭터는 로그인한 계정의 것이다(서버가 정한다). 여기 profile은 화면 표시용 사본이다.
+  let profile = { name: '', char: 'cat', device: session.device };
+  let account = null;
 
-  const save = () => (session.profile = profile);
-
-  nickname.value = profile.name;
   nickname.addEventListener('input', () => {
     profile = { ...profile, name: nickname.value.trim() };
-    save();
+  });
+  // 입력을 마치면 서버에 저장한다. 규칙에 안 맞으면 되돌린다.
+  nickname.addEventListener('change', async () => {
+    if (!account || nickname.value.trim() === account.nickname) return;
+    const res = await request('account:update', { nickname: nickname.value.trim() });
+    if (!res.ok) {
+      toast(res.error, 'error');
+      nickname.value = account.nickname;
+      profile = { ...profile, name: account.nickname };
+      return;
+    }
+    setAccount(res.account); // 계정 상태가 바뀌면 로비 화면(applyAccount)과 상단 계정 표시가 함께 갱신된다
+    toast('닉네임을 바꿨어요', 'ok', 1800);
   });
 
   // 내 옷장: 캐릭터 선택
@@ -24,12 +36,17 @@ export function initLobby({ onEnterRoom }) {
       ...Object.entries(CHARACTERS).map(([id, c]) => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = `char-tile${profile.char === id ? ' on' : ''}`;
-        btn.innerHTML = `<span class="char-icon">${charSvg(id)}</span><span class="char-name">${c.name}</span>`;
-        btn.addEventListener('click', () => {
-          profile = { ...profile, char: id };
-          save();
-          renderChars();
+        const locked = !!account && !account.owned.includes(id);
+        btn.className = `char-tile${profile.char === id ? ' on' : ''}${locked ? ' locked' : ''}`;
+        btn.innerHTML = `<span class="char-icon">${charSvg(id)}</span><span class="char-name">${c.name}</span>${locked ? '<span class="char-lock">🔒</span>' : ''}`;
+        btn.addEventListener('click', async () => {
+          if (locked) {
+            toast('아직 없는 캐릭터예요. 상점이나 뽑기에서 얻을 수 있어요', 'info', 2200);
+            return onOpenShop?.();
+          }
+          const res = await request('account:update', { char: id });
+          if (!res.ok) return toast(res.error, 'error');
+          setAccount(res.account); // 계정 상태가 바뀌면 로비 화면(applyAccount)과 상단 계정 표시가 함께 갱신된다
           picked.textContent = `✦ ${c.name} 선택 완료!`;
           replay(picked, 'pop');
           coach.emit('char');
@@ -39,6 +56,15 @@ export function initLobby({ onEnterRoom }) {
     );
   };
   renderChars();
+
+  // 로그인했거나 계정 정보가 바뀌었을 때 호출된다(상점에서 캐릭터를 얻은 뒤 등)
+  function applyAccount(acc) {
+    account = acc;
+    if (!acc) return;
+    profile = { name: acc.nickname, char: acc.char, device: session.device };
+    nickname.value = acc.nickname;
+    renderChars();
+  }
 
   // 맵 선택: 각 카드가 자기 테마 색으로 무대 미리보기를 그린다
   $('#map-chips').replaceChildren(
@@ -126,6 +152,7 @@ export function initLobby({ onEnterRoom }) {
   });
 
   return {
+    applyAccount,
     selectedMap: () => $('#map-chips .on')?.dataset.value ?? 'east',
     profile: () => profile,
   };
