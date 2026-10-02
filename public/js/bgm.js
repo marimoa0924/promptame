@@ -4,6 +4,7 @@ const KEY = 'bgm-muted';
 const VOLUME = 0.35;
 const tracks = new Map();
 let current = null;
+let blocked = false; // 브라우저가 자동재생을 막아서 아직 못 튼 상태
 let currentKey = null; // current가 어느 곡(맵 이름)인지
 let wanted = null; // 지금 틀어야 하는 맵(없으면 null)
 let muted = false;
@@ -35,7 +36,9 @@ function apply() {
   const a = audioFor(wanted);
   current = a;
   currentKey = wanted;
-  if (a.paused) a.play().catch(() => {}); // 자동재생이 막히면 다음 상호작용 때 다시 시도된다
+  if (a.paused) {
+    a.play().then(() => (blocked = false), () => (blocked = true)); // 자동재생이 막히면 첫 클릭·키 입력 때 한 번만 다시 시도한다
+  }
 }
 
 // 방 상태가 바뀔 때마다 부른다. map: 'east' | 'future' | 'medieval' | 'space'
@@ -62,8 +65,12 @@ export function initBgmButton(btn) {
     apply();
   });
   // 자동재생이 막혔다면 첫 클릭이나 키 입력 때 이어서 튼다
-  document.addEventListener('pointerdown', apply);
-  document.addEventListener('keydown', apply);
+  // 버튼 누르기와 배경음악은 별개다. 자동재생이 막혀 못 틀고 있을 때만 첫 입력에 한 번 시작하고, 그 뒤로는 입력에 반응하지 않는다.
+  const resume = () => {
+    if (blocked) apply();
+  };
+  document.addEventListener('pointerdown', resume);
+  document.addEventListener('keydown', resume);
   paint();
   syncBgm('lobby', null); // 처음에는 로비 곡. 브라우저가 막으면 첫 클릭 때 시작된다
 }
