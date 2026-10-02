@@ -40,8 +40,19 @@ function setup({ settings = {}, ai = fakeAI(), timing = FAST } = {}) {
   room.join(B, 'pB', { name: '비이', char: 'dog' });
   return { room, log, A, B, isClosed: () => closed, events: (ev) => log.filter((l) => l.ev === ev) };
 }
-const playing = async (ctx) => { await sleep(60); assert.equal(ctx.room.state, 'playing'); };
-const answered = async (ms = 80) => sleep(ms);
+const playing = async (ctx) => { await waitFor(() => ctx.room.state === 'playing'); };
+
+// 고정 시간 대신 조건이 될 때까지 기다린다.
+// 윈도우는 타이머 단위가 약 15ms라 sleep(1)도 15ms가 걸려서, 고정 대기는 답변이 끝나기 전에 검사하게 된다.
+async function waitFor(cond, timeoutMs = 3000) {
+  const until = Date.now() + timeoutMs;
+  while (!cond()) {
+    if (Date.now() > until) throw new Error('waitFor: 시간 안에 조건이 맞지 않았어요');
+    await sleep(5);
+  }
+}
+// 보낸 답변이 재생·판정까지 끝날 때까지 기다린다
+const answered = (ctx, id = 'pA') => waitFor(() => !ctx.room.players.get(id).busy);
 
 test('두 사람이 들어오면 카운트다운 뒤 시작하고, 같은 순서의 문제를 받는다', async () => {
   const c = setup();
@@ -82,7 +93,7 @@ test('PASS하면 그 사람만 다음 문제로 넘어가고 점수를 얻는다
   const c = setup();
   await playing(c);
   c.room.submit('pA', 'PASS 설명');
-  await answered();
+  await answered(c);
   const [a, b] = [...c.room.players.values()];
   assert.equal(a.score, 1);
   assert.equal(a.topicIdx, 1);
@@ -96,11 +107,11 @@ test('RETRY는 같은 문제에 계속 다시 쓸 수 있고, RETRY 뒤 PASS는 
   await playing(c);
   const a = c.room.players.get('pA');
   c.room.submit('pA', '엉뚱한 말');
-  await answered();
+  await answered(c);
   assert.equal(a.topicIdx, 0);
   assert.equal(a.attempts, 1);
   c.room.submit('pA', 'PASS 다시');
-  await answered();
+  await answered(c);
   assert.equal(a.score, 1);
   assert.equal(a.streak, 0);
   assert.equal(a.attempts, 0);
@@ -110,7 +121,7 @@ test('분량을 넘기면 필수어가 있어도 RETRY', async () => {
   const c = setup();
   await playing(c);
   c.room.submit('pA', 'PASS LONG');
-  await answered(300); // 긴 답변은 재생 조각이 많다
+  await answered(c);
   const r = c.events('ai:result').at(-1).payload;
   assert.equal(r.pass, false);
   assert.ok(r.verdict.reasons.includes('LENGTH_OVER'));
@@ -122,7 +133,7 @@ test('한 번에 맞힌 PASS 3연속이면 상대 입력이 5초 멈추고 내 �
   const [a, b] = [...c.room.players.values()];
   for (let i = 0; i < 3; i++) {
     assert.equal(c.room.submit('pA', 'PASS').ok, true);
-    await answered();
+    await answered(c);
   }
   assert.equal(a.score, 3);
   assert.equal(a.streak, 0);
@@ -137,7 +148,7 @@ test('건너뛰기: 점수 없이 내 문제만 넘어가고 연속이 0이 되�
   await playing(c);
   const [a, b] = [...c.room.players.values()];
   c.room.submit('pA', 'PASS');
-  await answered();
+  await answered(c);
   assert.equal(a.streak, 1);
   assert.equal(c.room.skip('pA').ok, true);
   assert.equal(a.topicIdx, 2);
@@ -214,9 +225,8 @@ test('한 번 더 하기는 양쪽이 모두 눌러야 시작하고, 이미 나�
   const c = setup({ settings: { timeLimit: 0.15 } });
   await sleep(40);
   c.room.submit('pA', 'PASS'); // A는 두 번째 문제까지 도달
-  await answered();
-  await sleep(200);
-  assert.equal(c.room.state, 'ended');
+  await answered(c);
+  await waitFor(() => c.room.state === 'ended');
   const seen = c.room.sequence.slice(0, 2).map((x) => x.problem.id);
   assert.equal(c.room.rematch('pA').ok, true);
   assert.equal(c.room.state, 'ended'); // 한쪽만 누르면 시작하지 않는다
