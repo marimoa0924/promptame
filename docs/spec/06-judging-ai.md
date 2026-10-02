@@ -6,7 +6,7 @@
 
 | 함수 | 입력 | 출력 | 메모 |
 |---|---|---|---|
-| `checkPrompt(prompt, problem, promptLimit=null)` | 프롬프트, 문제, 글자 제한 | `{ok:true}` 또는 `{ok:false, code, ...}` | code는 `EMPTY`, `TOO_LONG`, `FORBIDDEN`. `FORBIDDEN`에는 `word`와 `kind`(topic, keyword, extra, initials)가 붙음 |
+| `checkPrompt(prompt, problem, promptLimit=null)` | 프롬프트, 문제, 글자 제한 | `{ok:true}` 또는 `{ok:false, code, ...}` | code는 `EMPTY`, `TOO_LONG`, `FORBIDDEN`, `LENGTH_SPEC`(분량을 숫자로 직접 요구, `match`에 걸린 표현). `FORBIDDEN`에는 `word`와 `kind`(topic, keyword, extra, initials)가 붙음 |
 | `checkAnswer(answer, problem, lengthRule, difficultyRules)` | AI 답변, 문제, 분량 | `{pass, keywordOk, lengthOk, matched, needed, length:{type,limit,actual}}` | 필수어는 공백, 대소문자, 특수문자를 무시한 부분 문자열로 센다 |
 | `drawQuestion(data, difficulty, usedIds, rng)` | 문제 데이터, 난이도, 이미 나온 번호 | `{problem, lengthRule}` | 안 나온 문제 우선. 다 쓰면 같은 풀에서 다시 뽑음. 분량은 8개 중 독립으로 뽑음 |
 | `countChars`, `countSentences` | 글 | 숫자 | 글자 수는 공백과 줄바꿈을 포함. 문장은 끝 기호나 줄바꿈 뒤에서 나누고 번호만 있는 조각은 제외 |

@@ -10,7 +10,8 @@ afterEach(() => {
 });
 const FAST = { countdownMs: 20, replayTickMs: 1, judgeBaseMs: 5, judgePerLineMs: 1, endGraceMs: 600, waitTtlMs: 600_000 };
 
-// 프롬프트에 PASS가 들어 있으면 필수어를 모두 담은 짧은 답, LONG이 있으면 분량 초과, 그 외에는 필수어 없는 답
+// 프롬프트에 XQZ1이 들어 있으면 필수어를 모두 담은 짧은 답, XQZ2도 있으면 분량 초과, 그 외에는 필수어 없는 답
+// (영어 PASS는 어떤 문제의 금지어와 겹쳐서 쓰지 않는다)
 function fakeAI({ delay = 0, status = 'OK' } = {}) {
   return {
     kind: 'fake',
@@ -18,8 +19,8 @@ function fakeAI({ delay = 0, status = 'OK' } = {}) {
       await sleep(delay);
       if (status !== 'OK') return { status, text: '', truncated: false, finishReason: 'X', latencyMs: 0, usage: null };
       let text = '관련 없는 답이에요';
-      if (prompt.includes('PASS')) text = problem.keywords.join(' ');
-      if (prompt.includes('LONG')) text = `${problem.keywords.join(' ')}. 하나. 둘. 셋. 넷. 다섯.`.repeat(30);
+      if (prompt.includes('XQZ1')) text = problem.keywords.join(' ');
+      if (prompt.includes('XQZ2')) text = `${problem.keywords.join(' ')}. 하나. 둘. 셋. 넷. 다섯.`.repeat(30);
       return { status: 'OK', text, truncated: false, finishReason: 'STOP', latencyMs: delay, usage: null };
     },
   };
@@ -40,8 +41,17 @@ function setup({ settings = {}, ai = fakeAI(), timing = FAST } = {}) {
   room.join(B, 'pB', { name: '비이', char: 'dog' });
   return { room, log, A, B, isClosed: () => closed, events: (ev) => log.filter((l) => l.ev === ev) };
 }
-const playing = async (ctx) => { await sleep(60); assert.equal(ctx.room.state, 'playing'); };
-const answered = async (ms = 80) => sleep(ms);
+// 조건이 될 때까지 기다린다 (고정 시간 대기는 느린 컴퓨터에서 흔들린다)
+async function until(cond, ms = 3000) {
+  const end = Date.now() + ms;
+  while (!cond()) {
+    if (Date.now() > end) throw new Error('기다리던 조건이 안 됐어요');
+    await sleep(2);
+  }
+}
+const playing = (ctx) => until(() => ctx.room.state === 'playing');
+// 진행 중인 AI 요청이 모두 끝날 때까지
+const answered = (ctx) => until(() => ![...ctx.room.players.values()].some((p) => p.busy));
 
 test('두 사람이 들어오면 카운트다운 뒤 시작하고, 같은 순서의 문제를 받는다', async () => {
   const c = setup();
@@ -57,15 +67,14 @@ test('두 사람이 들어오면 카운트다운 뒤 시작하고, 같은 순서
 test('상대의 프롬프트는 판이 끝날 때까지 보내지 않는다', async () => {
   const c = setup();
   await playing(c);
-  c.room.submit('pA', 'PASS 설명해줘');
-  await sleep(5);
+  c.room.submit('pA', 'XQZ1 설명해줘');
   const toB = c.log.filter((l) => l.target === 'sB' && l.ev === 'ai:start').at(-1);
   const toA = c.log.filter((l) => l.target === 'sA' && l.ev === 'ai:start').at(-1);
   assert.equal(toB.payload.prompt, null);
-  assert.equal(toA.payload.prompt, 'PASS 설명해줘');
+  assert.equal(toA.payload.prompt, 'XQZ1 설명해줘');
   const snapB = c.room.snapshot('pB').players.find((p) => p.id === 'pA');
   assert.equal(snapB.live.prompt, null);
-  assert.equal(c.room.snapshot('pA').players.find((p) => p.id === 'pA').live.prompt, 'PASS 설명해줘');
+  assert.equal(c.room.snapshot('pA').players.find((p) => p.id === 'pA').live.prompt, 'XQZ1 설명해줘');
 });
 
 test('금지어, 빈 입력, 길이 초과는 전송으로 세지 않는다', async () => {
@@ -81,8 +90,8 @@ test('금지어, 빈 입력, 길이 초과는 전송으로 세지 않는다', as
 test('PASS하면 그 사람만 다음 문제로 넘어가고 점수를 얻는다', async () => {
   const c = setup();
   await playing(c);
-  c.room.submit('pA', 'PASS 설명');
-  await answered();
+  c.room.submit('pA', 'XQZ1 설명');
+  await answered(c);
   const [a, b] = [...c.room.players.values()];
   assert.equal(a.score, 1);
   assert.equal(a.topicIdx, 1);
@@ -96,11 +105,11 @@ test('RETRY는 같은 문제에 계속 다시 쓸 수 있고, RETRY 뒤 PASS는 
   await playing(c);
   const a = c.room.players.get('pA');
   c.room.submit('pA', '엉뚱한 말');
-  await answered();
+  await answered(c);
   assert.equal(a.topicIdx, 0);
   assert.equal(a.attempts, 1);
-  c.room.submit('pA', 'PASS 다시');
-  await answered();
+  c.room.submit('pA', 'XQZ1 다시');
+  await answered(c);
   assert.equal(a.score, 1);
   assert.equal(a.streak, 0);
   assert.equal(a.attempts, 0);
@@ -109,8 +118,8 @@ test('RETRY는 같은 문제에 계속 다시 쓸 수 있고, RETRY 뒤 PASS는 
 test('분량을 넘기면 필수어가 있어도 RETRY', async () => {
   const c = setup();
   await playing(c);
-  c.room.submit('pA', 'PASS LONG');
-  await answered(300); // 긴 답변은 재생 조각이 많다
+  c.room.submit('pA', 'XQZ1 XQZ2');
+  await answered(c);
   const r = c.events('ai:result').at(-1).payload;
   assert.equal(r.pass, false);
   assert.ok(r.verdict.reasons.includes('LENGTH_OVER'));
@@ -121,14 +130,14 @@ test('한 번에 맞힌 PASS 3연속이면 상대 입력이 5초 멈추고 내 �
   await playing(c);
   const [a, b] = [...c.room.players.values()];
   for (let i = 0; i < 3; i++) {
-    assert.equal(c.room.submit('pA', 'PASS').ok, true);
-    await answered();
+    assert.equal(c.room.submit('pA', 'XQZ1').ok, true);
+    await answered(c);
   }
   assert.equal(a.score, 3);
   assert.equal(a.streak, 0);
   assert.ok(b.frozenUntil - Date.now() > 4000 && b.frozenUntil - Date.now() <= 5000);
   assert.equal(c.events('game:event').at(-1).payload.type, 'freeze');
-  assert.equal(c.room.submit('pB', 'PASS').ok, false); // 얼음 중에는 못 보낸다
+  assert.equal(c.room.submit('pB', 'XQZ1').ok, false); // 얼음 중에는 못 보낸다
   assert.equal(c.room.snapshot('pA').players[0].streak, 0);
 });
 
@@ -136,8 +145,8 @@ test('건너뛰기: 점수 없이 내 문제만 넘어가고 연속이 0이 되�
   const c = setup();
   await playing(c);
   const [a, b] = [...c.room.players.values()];
-  c.room.submit('pA', 'PASS');
-  await answered();
+  c.room.submit('pA', 'XQZ1');
+  await answered(c);
   assert.equal(a.streak, 1);
   assert.equal(c.room.skip('pA').ok, true);
   assert.equal(a.topicIdx, 2);
@@ -152,8 +161,8 @@ test('AI가 끝내 답하지 못하면 시도로 세지 않고 다시 보낼 수
   const c = setup({ ai: fakeAI({ status: 'ERROR' }) });
   await playing(c);
   const a = c.room.players.get('pA');
-  c.room.submit('pA', 'PASS');
-  await sleep(1300); // 재시도 두 번의 대기
+  c.room.submit('pA', 'XQZ1');
+  await until(() => c.events('ai:void').length === 1, 5000); // 재시도 두 번의 대기
   assert.equal(c.events('ai:void').length, 1);
   assert.equal(a.attempts, 0);
   assert.equal(a.busy, false);
@@ -161,32 +170,29 @@ test('AI가 끝내 답하지 못하면 시도로 세지 않고 다시 보낼 수
 });
 
 test('시간이 끝나기 전에 보낸 요청은 유예 안에 끝나면 점수에 들어가고, 이후 전송은 거절한다', async () => {
-  const c = setup({ settings: { timeLimit: 0.15 }, ai: fakeAI({ delay: 250 }) });
-  await sleep(40);
-  assert.equal(c.room.submit('pA', 'PASS').ok, true);
-  await sleep(200); // 이제 endsAt 이후
+  const c = setup({ settings: { timeLimit: 0.5 }, ai: fakeAI({ delay: 700 }), timing: { ...FAST, endGraceMs: 3000 } });
+  await playing(c);
+  assert.equal(c.room.submit('pA', 'XQZ1').ok, true);
+  await until(() => c.room.closing); // 시간이 끝났다
   assert.equal(c.room.state, 'playing'); // 아직 유예 중
-  assert.equal(c.room.submit('pB', 'PASS').ok, false);
-  await sleep(500);
-  assert.equal(c.room.state, 'ended');
+  assert.equal(c.room.submit('pB', 'XQZ1').ok, false);
+  await until(() => c.room.state === 'ended');
   assert.equal(c.room.players.get('pA').score, 1);
   assert.equal(c.events('game:end').at(-1).payload.winnerId, 'pA');
   assert.equal(c.events('game:end').at(-1).payload.reason, 'timeup');
 });
 
 test('유예가 지나도 안 온 요청은 버리고 끝낸다', async () => {
-  const c = setup({ settings: { timeLimit: 0.1 }, ai: fakeAI({ delay: 2000 }), timing: { ...FAST, endGraceMs: 150 } });
-  await sleep(40);
-  c.room.submit('pA', 'PASS');
-  await sleep(450);
-  assert.equal(c.room.state, 'ended');
+  const c = setup({ settings: { timeLimit: 0.3 }, ai: fakeAI({ delay: 3000 }), timing: { ...FAST, endGraceMs: 200 } });
+  await playing(c);
+  c.room.submit('pA', 'XQZ1');
+  await until(() => c.room.state === 'ended');
   assert.equal(c.room.players.get('pA').score, 0);
 });
 
 test('점수가 같으면 무승부(0 대 0 포함)', async () => {
   const c = setup({ settings: { timeLimit: 0.1 } });
-  await sleep(150);
-  assert.equal(c.room.state, 'ended');
+  await until(() => c.room.state === 'ended');
   assert.equal(c.events('game:end').at(-1).payload.winnerId, null);
 });
 
@@ -211,12 +217,11 @@ test('카운트다운 중에 나가면 판이 무효다(승패 없음)', async (
 });
 
 test('한 번 더 하기는 양쪽이 모두 눌러야 시작하고, 이미 나온 문제는 피한다', async () => {
-  const c = setup({ settings: { timeLimit: 0.15 } });
-  await sleep(40);
-  c.room.submit('pA', 'PASS'); // A는 두 번째 문제까지 도달
-  await answered();
-  await sleep(200);
-  assert.equal(c.room.state, 'ended');
+  const c = setup({ settings: { timeLimit: 0.6 } });
+  await playing(c);
+  c.room.submit('pA', 'XQZ1'); // A는 두 번째 문제까지 도달
+  await answered(c);
+  await until(() => c.room.state === 'ended');
   const seen = c.room.sequence.slice(0, 2).map((x) => x.problem.id);
   assert.equal(c.room.rematch('pA').ok, true);
   assert.equal(c.room.state, 'ended'); // 한쪽만 누르면 시작하지 않는다

@@ -539,6 +539,8 @@ function promptError(check) {
       return `${check.limit}자를 넘었어요`;
     case 'FORBIDDEN':
       return `'${check.word}'은(는) 직접 쓸 수 없어요!`;
+    case 'LENGTH_SPEC':
+      return `분량('${check.match}')은 직접 말할 수 없어요!`;
     default:
       return '보낼 수 없는 프롬프트예요';
   }

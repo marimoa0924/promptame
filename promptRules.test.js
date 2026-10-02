@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {
-  checkPrompt, checkAnswer, countSentences, countChars, composeJamo, drawQuestion, drawSequence,
+  checkPrompt, findLengthSpec, checkAnswer, countSentences, countChars, composeJamo, drawQuestion, drawSequence,
 } from './promptRules.js';
 
 const data = JSON.parse(fs.readFileSync(new URL('./problems.json', import.meta.url), 'utf8'));
@@ -143,4 +143,19 @@ test('문제 목록은 풀을 다 쓰기 전에는 겹치지 않고 다 쓰면 �
   assert.ok(list.every((x) => x.problem.difficulty === '보통' && x.lengthRule));
   assert.equal(new Set(list.slice(0, 20).map((x) => x.problem.id)).size, 20);
   assert.equal(new Set(list.slice(20, 40).map((x) => x.problem.id)).size, 20);
+});
+
+test('분량을 직접 말하는 프롬프트는 막는다', () => {
+  for (const p of ['50자 이내로 써줘', '100 자 이내로 설명해줘', '3문장으로 설명해줘', '세 줄로 요약해줘', '한 줄로 알려줘', '두 문장만', '열 글자로', '오십 글자 이내', '３００자 이내', '5줄 이하', 'in 3 sentences please', 'two lines', 'under 50 words']) {
+    assert.equal(findLengthSpec(p) !== null, true, p);
+    assert.equal(checkPrompt(p, mito).code, 'LENGTH_SPEC', p);
+  }
+  assert.equal(checkPrompt('150자 이내로 알려줘', mito).match, '150자');
+});
+
+test('숫자 없이 짧게 해 달라는 말과 비슷하게 생긴 다른 말은 통과한다', () => {
+  for (const p of ['짧고 간결하게 설명해줘', '아이들에게 쉽게 설명해줘', '사자에 대해 알려줘', '이 문장을 쉽게 풀어줘', '줄거리를 알려줘', '대한 줄거리를 알려줘', '10자리 비밀번호 만드는 법', '3가지 예를 들어줘', '자료를 만들어줘', '세계 지도를 설명해줘', '십자가 모양 알려줘']) {
+    assert.equal(findLengthSpec(p), null, p);
+  }
+  assert.equal(allowed('나는 교사야. 아이들 눈높이에 맞게 짧고 간결하게 설명해줘', mito), true);
 });
