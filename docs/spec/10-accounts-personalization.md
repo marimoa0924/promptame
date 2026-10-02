@@ -70,7 +70,7 @@ AI를 쓰지 않고 규칙으로 계산한다(판정과 같은 원칙). 판이 �
 
 1. 구글 클라우드 콘솔에서 OAuth 클라이언트 ID(웹 애플리케이션)를 만든다.
 2. "승인된 자바스크립트 원본"에 서비스 주소를 넣는다. 개발은 `http://localhost:3000`, 운영은 `https://내도메인`이다. 구글은 localhost가 아닌 곳에서는 https를 요구한다.
-3. `.env`(또는 호스팅의 환경변수)에 `GOOGLE_CLIENT_ID=발급받은값`을 넣고 서버를 다시 켠다.
+3. `.env`(또는 호스팅의 환경변수)에 `GOOGLE_CLIENT_ID=발급받은값`을 넣고 서버를 다시 켠다. 값을 복사하기 싫으면 콘솔에서 내려받은 JSON 파일(`client_secret_….json`)을 프로젝트 폴더에 두기만 해도 된다(`google-client.json`으로 바꿔도 되고 `GOOGLE_CLIENT_FILE`로 위치를 지정해도 된다). 클라이언트 ID가 `GOOGLE_CLIENT_ID`에 있으면 그것이 우선이다. 서버는 JSON에서 클라이언트 ID만 읽고, 비밀번호(`client_secret`)는 읽지 않는다. 이 파일은 `.gitignore`에 들어 있어서 올라가지 않는다. [제안]
 4. 로그인 화면에 "Google로 로그인" 버튼이 나오면 성공이다. 아직 설정이 없으면 "서버에 GOOGLE_CLIENT_ID 설정이 있어야 해요"가 보인다.
 5. AWS에서는 도메인과 https(예: 로드밸런서나 Nginx와 인증서)가 필요하고, `store.json`이 있는 디스크가 서버를 다시 켜도 남아야 한다(`DATA_FILE`로 위치 지정). 프록시 뒤라면 `ALLOWED_ORIGINS`에 서비스 주소를 넣는다. [제안]
 

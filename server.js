@@ -14,7 +14,8 @@ import { Server } from 'socket.io';
 import { Room } from './game/room.js';
 import { createAIFromEnv, listModels } from './game/gemini.js';
 import { createAccounts } from './game/accounts.js';
-import { verifyGoogleIdToken, GoogleAuthError } from './game/googleAuth.js';
+import { verifyGoogleIdToken, GoogleAuthError, clientIdFromJson } from './game/googleAuth.js';
+import { readdirSync, readFileSync } from 'node:fs';
 import { createJsonStore } from './game/jsonStore.js';
 import { createSeen } from './game/seen.js';
 import { createRanking } from './game/ranking.js';
@@ -34,7 +35,24 @@ const ranking = createRanking(store);
 // 처음 4종은 모두 쓸 수 있고, 나머지는 상점이나 뽑기로 얻는다
 const accounts = createAccounts(store, { ranking, seen, characters: CHARACTERS, starters: CHARACTERS.slice(0, 4) });
 // 앞뒤 공백, 따옴표가 섞여 들어와도 지운다 (.env에 잘못 붙여 넣는 경우가 잦다)
-const GOOGLE_CLIENT_ID = (process.env.GOOGLE_CLIENT_ID || '').trim().replace(/^["']|["']$/g, '').trim();
+// 클라이언트 ID는 GOOGLE_CLIENT_ID 환경변수가 우선이고, 없으면 구글 콘솔에서 내려받은 JSON 파일에서 읽는다
+// (GOOGLE_CLIENT_FILE로 지정하거나, 프로젝트 폴더의 google-client.json 또는 client_secret*.json)
+let googleFileNote = '';
+function googleIdFromFile() {
+  const candidates = [process.env.GOOGLE_CLIENT_FILE, 'google-client.json', ...readdirSync('.').filter((f) => /^client_secret.*\.json$/i.test(f))].filter(Boolean);
+  for (const file of candidates) {
+    try {
+      const found = clientIdFromJson(readFileSync(file, 'utf8'));
+      if (!found) continue;
+      googleFileNote = `${file}에서 읽음${found.type === 'web' ? '' : ` (⚠ 유형이 '${found.type}'라 웹 로그인에는 쓸 수 없어요. 구글 콘솔에서 '웹 애플리케이션' 유형으로 새로 만드세요)`}`;
+      return found.clientId;
+    } catch {
+      /* 파일이 없으면 다음 후보 */
+    }
+  }
+  return '';
+}
+const GOOGLE_CLIENT_ID = (process.env.GOOGLE_CLIENT_ID || '').trim().replace(/^["']|["']$/g, '').trim() || googleIdFromFile();
 const googleIdLooksValid = /^\d+-[a-z0-9]+\.apps\.googleusercontent\.com$/i.test(GOOGLE_CLIENT_ID);
 // 계정이 생기기 전 기기 ID(브라우저 저장값). 이 값으로 쌓인 랭킹은 처음 로그인할 때 계정으로 옮겨 준다
 const validDevice = (d) => (typeof d === 'string' && d.length >= 8 && d.length <= 64 ? d : null);
@@ -316,7 +334,7 @@ async function selfTest() {
 httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`\n  🏮 프롬프트 배틀 서버 실행 중`);
   if (!GOOGLE_CLIENT_ID) console.log('  구글 로그인: 꺼짐 (GOOGLE_CLIENT_ID 없음, 게스트 로그인만 가능)');
-  else if (googleIdLooksValid) console.log(`  구글 로그인: 켜짐 (${GOOGLE_CLIENT_ID.slice(0, 14)}…)`);
+  else if (googleIdLooksValid) console.log(`  구글 로그인: 켜짐 (${GOOGLE_CLIENT_ID.slice(0, 14)}…)${googleFileNote ? ` ${googleFileNote}` : ''}`);
   else console.log(`  ⚠ 구글 로그인: GOOGLE_CLIENT_ID 모양이 이상해요 (${GOOGLE_CLIENT_ID.slice(0, 20)}…). '숫자-문자.apps.googleusercontent.com' 형태여야 해요. 클라이언트 보안 비밀번호(GOCSPX-…)나 프로젝트 ID를 넣은 건 아닌지 확인하세요`);
   console.log(`  AI: ${ai.kind === 'gemini' ? `Gemini (${ai.model})` : '목업 (GEMINI_API_KEY 없음)'}`);
   console.log(`  ➜ 로컬:  http://localhost:${PORT}`);

@@ -4,3 +4,6 @@ node_modules/
 .DS_Store
 store.json
 store.json.tmp
+# 구글에서 내려받은 클라이언트 JSON에는 비밀번호가 들어 있어서 올리지 않는다
+google-client.json
+client_secret*.json

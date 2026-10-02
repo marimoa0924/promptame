@@ -29,3 +29,20 @@ export async function verifyGoogleIdToken(credential, { clientId, fetchImpl = gl
   if (!info.sub) throw new GoogleAuthError('INVALID', '구글 로그인 정보가 올바르지 않아요');
   return { sub: String(info.sub), name: String(info.name ?? info.given_name ?? '') };
 }
+
+// 구글 콘솔에서 내려받은 OAuth 클라이언트 JSON(client_secret_….json)에서 클라이언트 ID만 꺼낸다.
+// 파일에는 비밀번호(client_secret)도 들어 있지만 이 서비스는 쓰지 않고 읽지도 않는다.
+// 결과: { clientId, type } 또는 null. type은 'web'(맞음), 'installed'(데스크톱 앱용이라 웹 로그인에 못 씀) 등.
+export function clientIdFromJson(text) {
+  let json;
+  try {
+    json = JSON.parse(String(text));
+  } catch {
+    return null;
+  }
+  for (const type of ['web', 'installed']) {
+    const id = json?.[type]?.client_id;
+    if (typeof id === 'string' && id.trim()) return { clientId: id.trim(), type };
+  }
+  return null;
+}

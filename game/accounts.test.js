@@ -5,7 +5,7 @@ import { createJsonStore } from './jsonStore.js';
 import { createSeen } from './seen.js';
 import { createRanking } from './ranking.js';
 import { createAccounts, ECON } from './accounts.js';
-import { verifyGoogleIdToken, GoogleAuthError } from './googleAuth.js';
+import { verifyGoogleIdToken, GoogleAuthError, clientIdFromJson } from './googleAuth.js';
 
 function setup(opts = {}) {
   const store = createJsonStore(null);
@@ -223,4 +223,13 @@ test('구글 ID 토큰 확인: 대상, 발급자, 만료를 검사한다', async
   await fails({ clientId: '', fetchImpl: f(info) }, 'NOT_CONFIGURED');
   await fails({ clientId: 'client-1', fetchImpl: async () => { throw new Error('offline'); } }, 'NETWORK');
   await assert.rejects(() => verifyGoogleIdToken('짧음', opts(info)), (e) => e.code === 'INVALID');
+});
+
+test('구글 콘솔에서 내려받은 JSON에서 클라이언트 ID만 꺼낸다', () => {
+  const web = JSON.stringify({ web: { client_id: '123-abc.apps.googleusercontent.com', client_secret: 'GOCSPX-비밀', project_id: 'p' } });
+  assert.deepEqual(clientIdFromJson(web), { clientId: '123-abc.apps.googleusercontent.com', type: 'web' });
+  assert.equal(clientIdFromJson(JSON.stringify({ installed: { client_id: '9-x.apps.googleusercontent.com' } })).type, 'installed');
+  assert.equal(clientIdFromJson('{깨진'), null);
+  assert.equal(clientIdFromJson('{}'), null);
+  assert.equal(JSON.stringify(clientIdFromJson(web)).includes('GOCSPX'), false); // 비밀번호는 읽지 않는다
 });
