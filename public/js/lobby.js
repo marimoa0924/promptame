@@ -37,9 +37,10 @@ export function initLobby({ onEnterRoom, onOpenShop }) {
         const btn = document.createElement('button');
         btn.type = 'button';
         const locked = !!account && !account.owned.includes(id);
-        btn.className = `char-tile${profile.char === id ? ' on' : ''}${locked ? ' locked' : ''}`;
-        btn.innerHTML = `<span class="char-icon">${charSvg(id)}</span><span class="char-name">${c.name}</span>${locked ? '<span class="char-lock">🔒</span>' : ''}`;
+        btn.className = `char-tile${profile.char === id ? ' on' : ''}${locked ? ' locked' : ''}${locked && c.secret ? ' secret' : ''}`;
+        btn.innerHTML = `<span class="char-icon">${charSvg(id)}</span><span class="char-name">${locked && c.secret ? '???' : c.name}</span>${locked ? '<span class="char-lock">🔒</span>' : ''}`;
         btn.addEventListener('click', async () => {
+          if (locked && c.secret) return toast('히든 캐릭터예요! 다른 캐릭터를 모두 모으면 열려요', 'info', 2400);
           if (locked) {
             toast('아직 없는 캐릭터예요. 상점이나 뽑기에서 얻을 수 있어요', 'info', 2200);
             return onOpenShop?.();

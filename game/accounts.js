@@ -30,8 +30,9 @@ const LIMITS = { HABIT_MAX: 300, HABIT_TEXT_KEEP: 100, GAMES_MAX: 30, TOKENS_MAX
 const sha = (t) => crypto.createHash('sha256').update(String(t)).digest('hex');
 const day = (t) => new Date(t).toISOString().slice(0, 10);
 
+// secret: 히든 캐릭터 번호. 상점과 뽑기에는 나오지 않고, 나머지 캐릭터를 모두 모으면 자동으로 생긴다.
 // characters: 서버가 아는 캐릭터 전체. starters: 처음부터 가진 캐릭터(나머지는 상점이나 뽑기로 얻는다)
-export function createAccounts(store, { ranking, seen, characters = CHARACTERS, starters = ['cat'], now = () => Date.now(), random = Math.random } = {}) {
+export function createAccounts(store, { ranking, seen, characters = CHARACTERS, starters = ['cat'], secret = null, now = () => Date.now(), random = Math.random } = {}) {
   const root = (store.data.accounts ??= {});
   root.byId ??= {}; // 계정 번호 -> 계정
   root.google ??= {}; // 구글 고유 번호(sub) -> 계정 번호
@@ -157,28 +158,43 @@ export function createAccounts(store, { ranking, seen, characters = CHARACTERS, 
     return { ok: true };
   }
 
+  // 히든 캐릭터를 뺀 캐릭터를 모두 가졌으면 히든 캐릭터를 준다. 새로 줬으면 true.
+  function unlockSecret(acc) {
+    if (!secret || acc.owned.includes(secret)) return false;
+    if (!characters.filter((c) => c !== secret).every((c) => acc.owned.includes(c))) return false;
+    acc.owned.push(secret);
+    return true;
+  }
+
   function buy(acc, char) {
     if (!characters.includes(char)) return { ok: false, error: '없는 캐릭터예요' };
+    if (char === secret) return { ok: false, error: '이 캐릭터는 살 수 없어요. 모든 캐릭터를 모으면 열려요' };
     if (acc.owned.includes(char)) return { ok: false, error: '이미 갖고 있어요' };
     if (acc.coins < ECON.BUY_PRICE) return { ok: false, error: `재화가 모자라요 (${ECON.BUY_PRICE} 필요)` };
     acc.coins -= ECON.BUY_PRICE;
     acc.owned.push(char);
+    const secretUnlocked = unlockSecret(acc);
     save();
-    return { ok: true, char };
+    return { ok: true, char, secretUnlocked };
   }
 
   function gacha(acc) {
-    const locked = characters.filter((c) => !acc.owned.includes(c));
+    const locked = characters.filter((c) => c !== secret && !acc.owned.includes(c));
     if (!locked.length) return { ok: false, error: '모든 캐릭터를 갖고 있어요!' };
     if (acc.coins < ECON.GACHA_PRICE) return { ok: false, error: `재화가 모자라요 (${ECON.GACHA_PRICE} 필요)` };
     const char = locked[Math.floor(random() * locked.length)];
     acc.coins -= ECON.GACHA_PRICE;
     acc.owned.push(char);
+    const secretUnlocked = unlockSecret(acc);
     save();
-    return { ok: true, char, odds: locked.length };
+    return { ok: true, char, odds: locked.length, secretUnlocked };
   }
 
-  const view = (acc) => ({
+  const view = (acc) => {
+    if (unlockSecret(acc)) save(); // 이미 다 모은 계정에도 히든 캐릭터를 준다
+    return viewOf(acc);
+  };
+  const viewOf = (acc) => ({
     id: acc.id,
     kind: acc.kind,
     nickname: acc.nickname,

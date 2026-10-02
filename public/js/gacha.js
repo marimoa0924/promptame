@@ -35,7 +35,7 @@ function confetti(box, n = 36) {
 }
 
 // root: 연출을 깔 요소(비어 있어야 한다), resultId: 서버가 뽑아 준 캐릭터, 반환: 연출이 끝나면 resolve
-export async function playGacha(root, resultId, { total = 0, owned = [] } = {}) {
+export async function playGacha(root, resultId, { total = 0, owned = [], secret = false } = {}) {
   let skipped = false;
   const skip = () => (skipped = true);
   root.hidden = false;
@@ -79,7 +79,7 @@ export async function playGacha(root, resultId, { total = 0, owned = [] } = {}) 
     capsule.hidden = true;
     slot.hidden = false;
     text.textContent = '과연…';
-    const pool = Object.keys(CHARACTERS);
+    const pool = Object.keys(CHARACTERS).filter((id) => secret || !CHARACTERS[id].secret); // 히든은 평소 룰렛에 안 나온다
     const delays = [50, 50, 50, 50, 55, 60, 70, 85, 105, 135, 175, 230, 310, 420, 600, 850]; // 점점 느려진다
     let shown = null;
     const steps = delays.length;
@@ -104,7 +104,7 @@ export async function playGacha(root, resultId, { total = 0, owned = [] } = {}) 
   capsule.hidden = true;
   rays.classList.add('on');
   text.remove();
-  const card = el('div', 'gc-reveal', `<span class="gc-new">NEW!</span><span class="gc-char">${charSvg(resultId)}</span><b>🎉 ${c?.name ?? resultId} 획득!</b>${total ? `<small>${total}종 중 ${owned.length}종 보유</small>` : ''}`);
+  const card = el('div', 'gc-reveal', `<span class="gc-new">${secret ? 'SECRET!' : 'NEW!'}</span><span class="gc-char">${charSvg(resultId)}</span><b>${secret ? '🎊 히든 캐릭터 해금!' : '🎉'} ${c?.name ?? resultId} 획득!</b>${secret ? '<small>모든 캐릭터를 모았어요!</small>' : total ? `<small>${total}종 중 ${owned.length}종 보유</small>` : ''}`);
   stage.append(card);
   confetti(stage);
   playSfx('gacha');

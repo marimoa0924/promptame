@@ -203,6 +203,28 @@ const SPRITES = {
       '................',
     ],
   },
+  // 히든: 얼굴이 있는 브라운관 티비
+  tv: {
+    colors: { K: '#25233a', G: '#b9bccf', S: '#7de8d8', R: '#ff6b6b', Y: '#ffd166' },
+    rows: [
+      '................',
+      '.....K....K.....',
+      '......K..K......',
+      '.......KK.......',
+      '..KKKKKKKKKKKK..',
+      '.KGGGGGGGGGGGGK.',
+      '.KGSSSSSSSSGGGK.',
+      '.KGSKSSSSKSGRGK.',
+      '.KGSKSSSSKSGYGK.',
+      '.KGSSSSSSSSGGGK.',
+      '.KGSSKKKKSSGGGK.',
+      '.KGSSSSSSSSGGGK.',
+      '.KGGGGGGGGGGGGK.',
+      '..KKKKKKKKKKKK..',
+      '...KK......KK...',
+      '................',
+    ],
+  },
   // 하얗고 작은 동글이 (치이카와)
   chiikawa: {
     colors: { W: '#fffaf3', w: '#d9c9b8', K: '#2b2b3a', P: '#ffb3c1', M: '#c46a6a' },

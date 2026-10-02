@@ -12,6 +12,7 @@ export const CHARACTERS = {
   mantis: { name: '사마귀' },
   ditto: { name: '메타몽' },
   chiikawa: { name: '치이카와' },
+  tv: { name: '티비', secret: true }, // 히든: 나머지를 모두 모으면 열린다
 };
 
 export const charSvg = (id, cls = '') => spriteSvg(id in CHARACTERS ? id : 'cat', cls);

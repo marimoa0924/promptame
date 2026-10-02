@@ -13,7 +13,7 @@ function setup(opts = {}) {
   const seen = createSeen(store);
   let t = Date.UTC(2026, 9, 3, 9, 0, 0);
   const clock = { now: () => t, advance: (ms) => (t += ms) };
-  const accounts = createAccounts(store, { ranking, seen, now: clock.now, random: opts.random ?? (() => 0) });
+  const accounts = createAccounts(store, { ranking, seen, now: clock.now, random: opts.random ?? (() => 0), ...opts.extra });
   return { store, ranking, seen, accounts, clock };
 }
 const guest = (a, nickname) => a.createGuest({ nickname }).account;
@@ -269,4 +269,30 @@ test('솔로 정산: 개인 최고 기록, 솔로 랭킹, 재화(하루 5판), �
   assert.deepEqual(accounts.settleSolo({ accountId: a.id, name: 'x', reason: 'aborted', difficulty: '보통', timeLimit: 180, score: 9 }), null);
   accounts.remove(b);
   assert.deepEqual(accounts.soloBoard('보통', 180).map((x) => x.name), ['에이']);
+});
+
+test('히든 캐릭터: 사거나 뽑을 수 없고, 나머지를 모두 모으면 자동으로 열린다', () => {
+  const { accounts } = setup({ extra: { characters: ['cat', 'dog', 'ghost'], secret: 'ghost' } });
+  const acc = guest(accounts, '냥이');
+  acc.coins = 1000;
+  assert.equal(accounts.buy(acc, 'ghost').ok, false); // 살 수 없다
+  assert.equal(accounts.update(acc, { char: 'ghost' }).ok, false); // 아직 없다
+  const b = accounts.buy(acc, 'dog'); // 일반 캐릭터는 이걸로 다 모았다
+  assert.equal(b.ok, true);
+  assert.equal(b.secretUnlocked, true);
+  assert.deepEqual([...acc.owned].sort(), ['cat', 'dog', 'ghost']);
+  assert.equal(accounts.gacha(acc).ok, false); // 뽑기에는 히든이 없다
+  assert.equal(accounts.update(acc, { char: 'ghost' }).ok, true);
+});
+
+test('히든 캐릭터: 뽑기로 마지막 캐릭터를 얻어도 열리고, 이미 다 모은 계정은 조회할 때 열린다', () => {
+  const { accounts } = setup({ extra: { characters: ['cat', 'dog', 'ghost'], secret: 'ghost' } });
+  const a = guest(accounts, '냥이');
+  a.coins = 100;
+  const g = accounts.gacha(a);
+  assert.equal(g.char, 'dog');
+  assert.equal(g.secretUnlocked, true);
+  const b = guest(accounts, '멍이');
+  b.owned.push('dog'); // 예전에 이미 다 모은 계정
+  assert.ok(accounts.view(b).owned.includes('ghost'));
 });

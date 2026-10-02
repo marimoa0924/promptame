@@ -16,16 +16,17 @@ export function initShop() {
     const acc = state.account;
     if (!acc) return;
     r.coins.textContent = `🪙 ${acc.coins}`;
-    const locked = Object.keys(CHARACTERS).filter((id) => !acc.owned.includes(id));
+    const locked = Object.keys(CHARACTERS).filter((id) => !CHARACTERS[id].secret && !acc.owned.includes(id));
     r.gacha.disabled = !locked.length || acc.coins < GACHA_PRICE;
     r.gacha.textContent = locked.length ? `🎲 뽑기 ${GACHA_PRICE}🪙` : '모두 모았어요!';
     r.odds.textContent = locked.length ? `아직 없는 캐릭터 ${locked.length}종 중에서 같은 확률(각 ${(100 / locked.length).toFixed(1)}%)로 하나가 나와요. 이미 가진 캐릭터는 나오지 않아요.` : '';
     r.grid.replaceChildren();
     for (const [id, c] of Object.entries(CHARACTERS)) {
       const owned = acc.owned.includes(id);
-      const card = el('div', `shop-card${owned ? ' owned' : ''}`);
-      card.append(Object.assign(el('span', 'char-icon'), { innerHTML: charSvg(id) }), el('span', 'char-name', c.name));
-      if (owned) card.append(el('span', 'shop-own', acc.char === id ? '사용 중' : '보유'));
+      const card = el('div', `shop-card${owned ? ' owned' : ''}${c.secret && !owned ? ' secret' : ''}`);
+      card.append(Object.assign(el('span', 'char-icon'), { innerHTML: charSvg(id) }), el('span', 'char-name', c.secret && !owned ? '???' : c.name));
+      if (c.secret && !owned) card.append(el('span', 'shop-own', '히든 · 모두 모으면 열려요'));
+      else if (owned) card.append(el('span', 'shop-own', acc.char === id ? '사용 중' : '보유'));
       else {
         const buy = el('button', 'btn btn-primary', `${BUY_PRICE}🪙 구매`);
         buy.disabled = acc.coins < BUY_PRICE;
@@ -38,6 +39,7 @@ export function initShop() {
           }
           setAccount(res.account);
           toast(`${c.name}을(를) 얻었어요!`, 'ok');
+          if (res.secretUnlocked) await playGacha(r.reveal, 'tv', { secret: true });
           render();
         });
         card.append(buy);
@@ -54,7 +56,9 @@ export function initShop() {
       return render();
     }
     setAccount(res.account);
-    await playGacha(r.reveal, res.char, { total: Object.keys(CHARACTERS).length, owned: res.account.owned });
+    const regular = Object.keys(CHARACTERS).filter((id) => !CHARACTERS[id].secret);
+    await playGacha(r.reveal, res.char, { total: regular.length, owned: res.account.owned.filter((id) => regular.includes(id)) });
+    if (res.secretUnlocked) await playGacha(r.reveal, 'tv', { secret: true });
     render();
   }
 

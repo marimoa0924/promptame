@@ -23,7 +23,8 @@ import { createSeen } from './game/seen.js';
 import { createRanking } from './game/ranking.js';
 
 const PORT = Number(process.env.PORT) || 3000;
-const CHARACTERS = ['cat', 'pigeon', 'dog', 'otaku', 'miku', 'snake', 'engineer', 'mantis', 'ditto', 'chiikawa'];
+const SECRET_CHARACTER = 'tv'; // 히든 캐릭터: 나머지를 모두 모으면 해금
+const CHARACTERS = ['cat', 'pigeon', 'dog', 'otaku', 'miku', 'snake', 'engineer', 'mantis', 'ditto', 'chiikawa', SECRET_CHARACTER];
 const MAPS = ['east', 'future', 'medieval', 'space'];
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
@@ -37,7 +38,7 @@ for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => process.exit(0));
 const seen = createSeen(store);
 const ranking = createRanking(store);
 // 처음 4종은 모두 쓸 수 있고, 나머지는 상점이나 뽑기로 얻는다
-const accounts = createAccounts(store, { ranking, seen, characters: CHARACTERS, starters: CHARACTERS.slice(0, 4) });
+const accounts = createAccounts(store, { ranking, seen, characters: CHARACTERS, starters: CHARACTERS.slice(0, 4), secret: SECRET_CHARACTER });
 // 앞뒤 공백, 따옴표가 섞여 들어와도 지운다 (.env에 잘못 붙여 넣는 경우가 잦다)
 // 클라이언트 ID는 GOOGLE_CLIENT_ID 환경변수가 우선이고, 없으면 구글 콘솔에서 내려받은 JSON 파일에서 읽는다
 // (GOOGLE_CLIENT_FILE로 지정하거나, 프로젝트 폴더의 google-client.json 또는 client_secret*.json)
