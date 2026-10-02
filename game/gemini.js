@@ -77,7 +77,11 @@ export function createGemini({
         const data = await res.json();
 
         const usage = data.usageMetadata
-          ? { inTokens: data.usageMetadata.promptTokenCount ?? 0, outTokens: data.usageMetadata.candidatesTokenCount ?? 0 }
+          ? {
+              inTokens: data.usageMetadata.promptTokenCount ?? 0,
+              outTokens: data.usageMetadata.candidatesTokenCount ?? 0,
+              thinkTokens: data.usageMetadata.thoughtsTokenCount ?? 0, // 생각에 쓴 토큰. 0이 아니면 생각 기능이 켜져 있다
+            }
           : null;
         if (data.promptFeedback?.blockReason) {
           return done('BLOCKED', { finishReason: data.promptFeedback.blockReason, usage });

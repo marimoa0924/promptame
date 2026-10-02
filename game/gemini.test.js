@@ -11,13 +11,13 @@ test('프롬프트를 시스템 프롬프트 없이 그대로 보내고 생각 �
     apiKey: 'k',
     fetchImpl: async (url, init) => {
       sent = { url, init, body: JSON.parse(init.body) };
-      return { ok: true, status: 200, json: async () => ({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: '답' }] } }], usageMetadata: { promptTokenCount: 3, candidatesTokenCount: 1 } }) };
+      return { ok: true, status: 200, json: async () => ({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: '답' }] } }], usageMetadata: { promptTokenCount: 3, candidatesTokenCount: 1, thoughtsTokenCount: 2 } }) };
     },
   });
   const r = await ai.generate('안녕');
   assert.equal(r.status, 'OK');
   assert.equal(r.text, '답');
-  assert.deepEqual(r.usage, { inTokens: 3, outTokens: 1 });
+  assert.deepEqual(r.usage, { inTokens: 3, outTokens: 1, thinkTokens: 2 });
   assert.equal(sent.body.contents[0].parts[0].text, '안녕');
   assert.equal(sent.body.systemInstruction, undefined);
   assert.equal(sent.body.generationConfig.thinkingConfig.thinkingBudget, 0);

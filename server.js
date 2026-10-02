@@ -151,7 +151,10 @@ io.on('connection', (socket) => {
 async function selfTest() {
   if (ai.kind !== 'gemini' || process.env.AI_SELFTEST === '0') return;
   const r = await ai.generate('안녕이라고만 답해 줘');
-  if (r.status === 'OK') console.log(`  ✅ Gemini 연결 확인 (${r.latencyMs}ms): ${r.text.slice(0, 30)}`);
+  if (r.status === 'OK') {
+    console.log(`  ✅ Gemini 연결 확인 (${r.latencyMs}ms): ${r.text.slice(0, 30)}`);
+    if (r.usage) console.log(`     토큰: 입력 ${r.usage.inTokens}, 출력 ${r.usage.outTokens}, 생각 ${r.usage.thinkTokens}${r.usage.thinkTokens > 0 ? ' ← 생각 기능이 켜져 있어요' : ''}`);
+  }
   else console.log(`  ❌ Gemini 호출 실패: ${r.status} ${r.finishReason ?? ''} ${r.detail ?? ''}\n     → 키(GEMINI_API_KEY)와 모델 이름(GEMINI_MODEL)을 확인하세요`);
   if (r.finishReason === 'HTTP_404') {
     const names = (await listModels(process.env.GEMINI_API_KEY)).filter((n) => n.includes('gemini'));
