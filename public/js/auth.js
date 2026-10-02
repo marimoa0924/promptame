@@ -50,6 +50,16 @@ export async function renderGoogleButton(container) {
   }
   google.accounts.id.initialize({ client_id: state.clientId, callback: onGoogleCredential });
   google.accounts.id.renderButton(container, { theme: 'outline', size: 'large', text: 'signin_with', locale: 'ko', width: 260 });
+  // 구글은 접속 주소(원본)가 콘솔의 "승인된 자바스크립트 원본"에 등록되어 있어야 로그인을 허용한다("no registered origin" 오류)
+  const origin = location.origin;
+  const local = /^http:\/\/localhost(:\d+)?$/.test(origin);
+  const okOrigin = local || origin.startsWith('https://');
+  container.append(Object.assign(document.createElement('p'), {
+    className: 'muted small google-origin',
+    textContent: okOrigin
+      ? `구글 로그인이 "no registered origin" 오류면 구글 콘솔 > 클라이언트 > "승인된 자바스크립트 원본"에 ${origin} 을(를) 추가하세요.`
+      : `이 주소(${origin})는 구글 로그인에 쓸 수 없어요. localhost 또는 https 주소로 접속해야 해요.`,
+  }));
 }
 
 async function guestLogin() {
