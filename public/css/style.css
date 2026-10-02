@@ -636,8 +636,9 @@ body.shake { animation: shake 0.12s steps(2) 5; }
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
   outline: 4px dashed var(--accent-2); outline-offset: 0;
   animation: coach-blink 0.8s steps(2) infinite;
-  transition: left 0.2s, top 0.2s, width 0.2s, height 0.2s;
 }
+/* 단계가 바뀔 때만 부드럽게 옮긴다. 늘 걸어 두면 스크롤할 때 박스가 늦게 따라온다 */
+.coach-hole.glide { transition: left 0.2s, top 0.2s, width 0.2s, height 0.2s; }
 @keyframes coach-blink { 50% { outline-color: #fff; } }
 .coach-tip {
   position: fixed; z-index: 71; width: min(360px, calc(100vw - 32px)); padding: 16px;

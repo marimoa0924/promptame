@@ -61,6 +61,8 @@ class Coach {
     this.r.quit.addEventListener('click', () => this.stop());
     this.r.action.addEventListener('click', () => this.actions[this.step?.action]?.());
     this.loop = this.loop.bind(this);
+    // 안쪽 영역을 스크롤할 때도 박스가 바로 따라오도록 스크롤 이벤트에서 즉시 다시 맞춘다
+    addEventListener('scroll', () => this.active && this.place(), { capture: true, passive: true });
   }
 
   get active() {
@@ -98,7 +100,10 @@ class Coach {
     this.r.action.textContent = s.action === 'example' ? '✎ 예시 넣기' : '';
     this.hole.hidden = this.tip.hidden = false;
     if (s.enter) this.actions[s.enter]?.();
+    this.hole.classList.add('glide');
     this.place();
+    clearTimeout(this.glideTimer);
+    this.glideTimer = setTimeout(() => this.hole.classList.remove('glide'), 260);
   }
 
   // 게임/로비에서 일어난 일을 알려 주면, 기다리던 단계면 넘어간다
