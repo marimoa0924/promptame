@@ -42,7 +42,7 @@ npm run dev              # 서버 첫 줄에 'AI: Gemini (모델명)'이 나오�
 5. 종료 → 흑백 전환 → 두둥! → The Winner is…… → 결과 카드 (총 시간 / 포인트 / 승패, 폭죽 or 우는 캐릭터)
 6. **한번 더 하기**(같은 방 설정) / **나가기**(로비)
 
-캐릭터는 PASS면 "야호!", RETRY면 울어요. 자유 채팅은 없고 이모지 8개로 감정을 표현할 수 있어요. 상대의 프롬프트는 판이 끝날 때까지 보이지 않아요.
+캐릭터는 PASS면 "야호!", RETRY면 울어요. 채팅 기능은 없고, 상대의 프롬프트는 판이 끝날 때까지 보이지 않아요.
 
 ## 구조
 
@@ -54,7 +54,7 @@ game/bot.js         연습봇 프롬프트
 promptRules.js      금지어 검사·답변 판정·출제 (서버와 브라우저가 같이 씀)
 problems.json       문제 데이터 (엑셀 → build-problems.mjs)
 public/js/main.js   화면 전환, 종료·한번 더 하기·튜토리얼 연결
-public/js/game.js   게임 화면 (보드, 룰렛, 스트리밍, 평가 형광펜, PASS/RETRY, 이모지, 체력바)
+public/js/game.js   게임 화면 (보드, 룰렛, 스트리밍, 평가 형광펜, PASS/RETRY, 체력바)
 public/js/finale.js 게임 종료 연출 + 결과 카드 + 픽셀 폭죽
 public/js/tutorial.js 하이라이트 박스 코치 + 튜토리얼 단계
 public/js/lobby.js  로비 (내 옷장, 방 만들기, 코드 입장)
