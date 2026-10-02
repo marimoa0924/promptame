@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { checkPrompt, checkAnswer, drawSequence } from '../promptRules.js';
+import { checkPrompt, checkAnswer, drawSequence, locateMatches, locateOverflow } from '../promptRules.js';
 import { createMockAI, generateWithRetry } from './gemini.js';
 import { botPrompt, BOT_NAMES } from './bot.js';
 
@@ -19,7 +19,11 @@ const DEFAULT_TIMING = {
   judgePerLineMs: 750,
   endGraceMs: 8000, // 시간이 끝났을 때 이미 보낸 요청을 기다려 주는 시간
   waitTtlMs: 600_000, // 대기방은 10분 안에 상대가 안 오면 닫는다
+  submitGapMs: 1000, // 같은 사람의 프롬프트 전송 최소 간격
+  rematchMs: 10_000, // 한 번 더 하기 요청이 유효한 시간
 };
+const LOG_MAX = 60; // 결과 화면에 보여 줄 프롬프트 기록은 사람당 최대 60개
+const LOG_ANSWER_MAX = 400;
 const RECONNECT_GRACE_MS = 20_000;
 const FREEZE_MS = 5000;
 const SKIP_PAUSE_MS = 3000; // 건너뛰면 내 입력이 잠깐 멈춘다 (분량만 골라 뽑는 것을 막는다)
@@ -157,6 +161,8 @@ export class Room {
       busy: false,
       frozenUntil: 0,
       frozenKind: null,
+      lastSubmitAt: 0,
+      log: [], // 이번 판에서 보낸 프롬프트와 결과. 판이 끝난 뒤 결과 화면에서 공개한다
       device: isBot ? null : (profile.device ?? null), // 랭킹과 본 문제 기록에 쓰는 기기 ID. 밖으로 보내지 않는다
       live: null,
     };
@@ -223,7 +229,10 @@ export class Room {
       for (const other of this.players.values()) other.ready = false;
       this.scheduleWaitExpiry();
     } else if (this.state === 'playing') {
-      this.end('forfeit', this.opponentOf(playerId)?.id ?? null, playerId);
+      const opp = this.opponentOf(playerId);
+      // 두 사람이 모두 끊겨 있으면 누구의 잘못이라고 할 수 없다. 승패 없이 판을 무효로 한다.
+      if (opp && !opp.isBot && !opp.connected) this.end('aborted', null, playerId);
+      else this.end('forfeit', opp?.id ?? null, playerId);
     }
     this.players.delete(playerId);
     if (this.humans().length === 0) return this.close();
@@ -277,6 +286,7 @@ export class Room {
     if (this.closing || Date.now() >= this.endsAt) return { ok: false, error: '시간이 끝났어요' };
     if (p.busy) return { ok: false, error: 'AI가 아직 답변 중이에요' };
     if (Date.now() < p.frozenUntil) return { ok: false, error: '얼어붙어서 입력할 수 없어요!' };
+    if (Date.now() - p.lastSubmitAt < this.t.submitGapMs) return { ok: false, error: '너무 빨라요! 잠깐만 기다려 주세요' };
 
     const text = String(raw ?? '').trim();
     const item = this.topicOf(p);
@@ -285,6 +295,7 @@ export class Room {
     if (!check.ok) return { ok: false, error: promptError(check) };
 
     p.busy = true;
+    p.lastSubmitAt = Date.now();
     p.attempts += 1;
     p.live = { prompt: text, text: '', phase: 'stream', result: null };
     for (const other of this.players.values()) {
@@ -326,7 +337,9 @@ export class Room {
     const alive = () => !this.closed && this.round === round && this.state === 'playing';
     const { problem, lengthRule } = item;
 
-    const gen = await generateWithRetry(this.aiFor(p), prompt, { problem, lengthRule });
+    const gen = await generateWithRetry(this.aiFor(p), prompt, { problem, lengthRule }, {
+      onRetry: (n) => alive() && this.emitTo(p, 'ai:retrying', { playerId: p.id, n }),
+    });
     if (!alive()) return;
     if (gen.status !== 'OK') {
       // AI가 끝내 답하지 못했다. 시도로 세지 않고 다시 보낼 수 있게 한다.
@@ -356,11 +369,16 @@ export class Room {
     const lines = answer.split('\n').filter((l) => l.trim()).length;
     const durationMs = Math.min(JUDGE_MAX_MS, this.t.judgeBaseMs + lines * this.t.judgePerLineMs);
     p.live.phase = 'judge';
-    this.emit('ai:judge', { playerId: p.id, durationMs });
+    // 평가 연출용: 필수어 위치와 분량을 넘기 시작한 위치(원문 글자 위치). 판정은 아래 verdict가 전부다.
+    const marks = locateMatches(answer, problem.keywords).map(({ start, end }) => ({ start, end }));
+    const over = verdict.lengthOk || verdict.truncated ? null : locateOverflow(answer, lengthRule);
+    this.emit('ai:judge', { playerId: p.id, durationMs, len: answer.length, marks, over });
     await sleep(durationMs);
     if (!alive()) return;
 
     const result = { pass: verdict.pass, reason: verdictReason(verdict) };
+    p.log.push({ topic: problem.topic, attempt: p.attempts, prompt, answer: answer.slice(0, LOG_ANSWER_MAX), pass: result.pass, reason: result.reason });
+    if (p.log.length > LOG_MAX) p.log.shift();
     p.live.phase = 'done';
     p.live.result = result;
     if (result.pass) {
@@ -413,6 +431,8 @@ export class Room {
   end(reason, winnerId, leaverId = null) {
     if (this.state !== 'countdown' && this.state !== 'playing') return;
     this.closing = false;
+    clearTimeout(this.rematchTimer);
+    this.rematchTimer = null;
     this.round += 1; // 진행 중이던 AI 답변 중단
     this.clearTimers();
     this.state = 'ended';
@@ -434,6 +454,8 @@ export class Room {
       leaverId,
       durationMs: this.startedAt ? endedAt - this.startedAt : 0,
       players: this.snapshot().players,
+      // 판이 끝났으니 두 사람이 보낸 프롬프트를 공개한다
+      history: players.map((p) => ({ playerId: p.id, name: p.name, entries: p.log })),
     };
     this.recordHistory(reason, winnerId, leaverId, players);
     this.emit('game:end', this.lastResult);
@@ -447,7 +469,7 @@ export class Room {
       if (p.device) this.hooks.seen?.add(p.device, this.sequence.slice(0, p.topicIdx + 1).map((x) => x.problem.id));
     }
     const humans = players.filter((p) => !p.isBot);
-    if (humans.length !== 2 || players.length !== 2 || !this.hooks.ranking) return;
+    if (reason === 'aborted' || humans.length !== 2 || players.length !== 2 || !this.hooks.ranking) return;
     const [a, b] = humans.map((p) => ({ id: p.id, device: p.device, name: p.name, char: p.char, score: p.score }));
     const ranking = this.hooks.ranking.record({ reason, winnerId, leaverId, a, b });
     if (ranking) this.lastResult.ranking = ranking;
@@ -460,14 +482,30 @@ export class Room {
     if (!p || this.state !== 'ended') return { ok: false, error: '지금은 다시 할 수 없어요' };
     p.ready = true;
     this.tryRematch();
+    if (this.state === 'ended' && [...this.players.values()].some((x) => x.ready)) this.armRematchExpiry();
     this.broadcast();
     return { ok: true };
+  }
+
+  // 한 번 더 하기 요청은 일정 시간 안에 상대가 응답하지 않으면 취소된다
+  armRematchExpiry() {
+    if (this.rematchTimer) return;
+    this.rematchTimer = setTimeout(() => {
+      this.rematchTimer = null;
+      if (this.state !== 'ended' || this.closed) return;
+      for (const p of this.players.values()) p.ready = p.isBot;
+      this.emit('rematch:expired', {});
+      this.broadcast();
+    }, this.t.rematchMs);
+    this.rematchTimer.unref?.();
   }
 
   tryRematch() {
     if (this.state !== 'ended') return;
     const all = [...this.players.values()];
     if (!all.every((p) => p.ready)) return;
+    clearTimeout(this.rematchTimer);
+    this.rematchTimer = null;
     // 같은 방 설정으로 초기화
     // 이번 판에서 본 문제는 다음 판에서 먼저 피한다
     const reached = Math.max(0, ...all.map((p) => p.topicIdx)) + 1;
@@ -475,7 +513,7 @@ export class Room {
     this.sequence = this.pickSequence();
     this.startedAt = this.endsAt = null;
     for (const p of all) {
-      Object.assign(p, { ready: false, score: 0, streak: 0, attempts: 0, topicIdx: 0, busy: false, frozenUntil: 0, frozenKind: null, live: null });
+      Object.assign(p, { ready: false, score: 0, streak: 0, attempts: 0, topicIdx: 0, busy: false, frozenUntil: 0, frozenKind: null, lastSubmitAt: 0, log: [], live: null });
     }
     if (all.length >= this.capacity) {
       this.startCountdown();
@@ -490,6 +528,7 @@ export class Room {
     if (this.closed) return;
     this.closed = true;
     clearTimeout(this.waitTimer);
+    clearTimeout(this.rematchTimer);
     this.clearTimers();
     for (const p of this.players.values()) clearTimeout(p.dropTimer);
     this.io.in(this.code).socketsLeave(this.code);

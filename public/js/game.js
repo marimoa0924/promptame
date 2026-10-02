@@ -39,6 +39,33 @@ function createBoard(slot, isMe) {
   return { el, r, isMe, playerId: null, topicKey: null, spin: {}, overlayKey: null, timers: {}, judgeTimers: [] };
 }
 
+// 평가 연출: 답변을 줄 단위로 나누고, 필수어(kw)와 분량을 넘긴 부분(over)을 표시한다. 줄 span 목록을 돌려준다.
+function renderLines(container, full, marks, over) {
+  const cls = new Array(full.length).fill('');
+  for (const m of marks) for (let i = m.start; i < m.end && i < full.length; i++) cls[i] = 'kw';
+  if (over != null) for (let i = over; i < full.length; i++) cls[i] = cls[i] ? `${cls[i]} over` : 'over';
+  container.replaceChildren();
+  const lines = full.split('\n');
+  let offset = 0;
+  return lines.map((text, li) => {
+    const line = document.createElement('span');
+    line.className = 'line';
+    for (let i = 0; i < text.length; ) {
+      let j = i + 1;
+      while (j < text.length && cls[offset + j] === cls[offset + i]) j++;
+      const piece = text.slice(i, j);
+      const c = cls[offset + i];
+      if (!c) line.append(piece);
+      else line.append(Object.assign(document.createElement(c.includes('kw') ? 'mark' : 'span'), { className: c, textContent: piece }));
+      i = j;
+    }
+    container.append(line);
+    if (li < lines.length - 1) container.append('\n');
+    offset += text.length + 1;
+    return line;
+  });
+}
+
 const REEL_SPINS = 14;
 const FIT_MIN = 0.55; // 최소 글자 크기 (원래 크기 대비)
 const reelItem = (text) => Object.assign(document.createElement('span'), { className: 'reel-item', textContent: text, title: text });
@@ -283,21 +310,15 @@ export class Game {
   }
 
   // 평가 AI가 한 줄씩 형광펜을 칠하며 읽는다
-  onAiJudge({ playerId, durationMs }) {
+  // marks: 필수어가 나온 위치, over: 분량을 넘기 시작한 위치, len: 서버가 본 답변 길이 (판정은 서버가 이미 끝냈고, 여기서는 표시만 한다)
+  onAiJudge({ playerId, durationMs, marks = [], over = null, len = null }) {
     const b = this.boardOf(playerId);
     if (!b) return;
     const { answer } = b.r;
     answer.classList.remove('streaming');
-    const lines = answer.textContent.split('\n');
-    answer.replaceChildren();
-    const spans = lines.map((text, i) => {
-      const span = document.createElement('span');
-      span.className = 'line';
-      span.textContent = text;
-      answer.append(span);
-      if (i < lines.length - 1) answer.append('\n');
-      return span;
-    });
+    const full = answer.textContent;
+    const trusted = len === full.length; // 아직 다 못 받았으면 위치가 어긋나므로 칠하지 않는다
+    const spans = renderLines(answer, full, trusted ? marks : [], trusted ? over : null);
     b.el.classList.add('judging');
     const per = (durationMs - 300) / Math.max(1, spans.length);
     spans.forEach((span, i) => {
@@ -536,6 +557,7 @@ export class Game {
     socket.on('ai:judge', (d) => this.onAiJudge(d));
     socket.on('ai:result', (d) => this.onAiResult(d));
     socket.on('ai:void', (d) => this.onAiVoid(d));
+    socket.on('ai:retrying', () => toast('AI 응답이 늦어요. 다시 시도하는 중…', 'info', 2500));
     socket.on('player:typing', (d) => this.onTyping(d));
     socket.on('game:event', (e) => {
       if (e.type === 'skip') {

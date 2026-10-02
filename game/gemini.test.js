@@ -58,9 +58,11 @@ test('시간 초과는 ERROR(TIMEOUT)', async () => {
 test('실패하면 최대 2번 더 시도한다', async () => {
   let calls = 0;
   const ai = { generate: async () => (++calls < 3 ? { status: 'EMPTY', text: '' } : { status: 'OK', text: '됐다' }) };
-  const r = await generateWithRetry(ai, 'x', {}, { waitMs: 1 });
+  const seen = [];
+  const r = await generateWithRetry(ai, 'x', {}, { waitMs: 1, onRetry: (n) => seen.push(n) });
   assert.equal(r.status, 'OK');
   assert.equal(calls, 3);
+  assert.deepEqual(seen, [1, 2]);
 
   calls = 0;
   const bad = { generate: async () => (calls++, { status: 'ERROR', text: '' }) };

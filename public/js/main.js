@@ -85,6 +85,14 @@ socket.on('room:state', (room) => {
   }
 });
 
+// 한 번 더 하기 요청에 상대가 응답하지 않아 취소됐다: 결과 카드를 다시 보여 준다
+socket.on('rematch:expired', () => {
+  const last = game.room?.lastResult;
+  if (!last || last.code !== session.room) return;
+  finale.show(last, session.playerId, { skipIntro: true });
+  toast('상대가 응답하지 않아 한번 더 하기가 취소됐어요', 'info', 3000);
+});
+
 // 대기방이 오래 비어 있어서 닫혔다
 socket.on('room:closed', () => {
   if (!session.room) return;
