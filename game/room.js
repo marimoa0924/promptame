@@ -24,7 +24,7 @@ const RECONNECT_GRACE_MS = 20_000;
 const FREEZE_MS = 5000;
 const SKIP_PAUSE_MS = 3000; // 건너뛰면 내 입력이 잠깐 멈춘다 (분량만 골라 뽑는 것을 막는다)
 const STREAK_FOR_FREEZE = 3;
-const BOT_CHARS = ['cat', 'pigeon', 'dog', 'otaku'];
+const BOT_CHARS = ['cat', 'pigeon', 'dog', 'otaku', 'miku', 'snake', 'engineer', 'mantis', 'ditto', 'chiikawa'];
 const TUTORIAL_FIRST = { topic: '광합성', lengthRule: { name: '3문장 이내', type: 'sentences', value: 3 } };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

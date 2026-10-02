@@ -139,21 +139,21 @@ b { font-weight: 700; }
 .code-input { text-transform: uppercase; letter-spacing: 0.2em; font-size: 1.5rem; text-align: center; }
 
 /* 캐릭터 타일: 팔레트 카드처럼 [아이콘][이름] */
-.char-grid { display: flex; flex-direction: column; gap: 12px; }
+.char-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .char-tile {
-  display: flex; align-items: center; gap: 12px; margin: 3px;
-  padding: 6px 14px 6px 6px; border: 0; cursor: pointer; text-align: left;
+  display: flex; align-items: center; gap: 10px; margin: 3px; min-width: 0;
+  padding: 5px 10px 5px 5px; border: 0; cursor: pointer; text-align: left;
   background: var(--paper); box-shadow: var(--frame-sm);
 }
-.char-tile:hover { transform: translateX(4px); }
+.char-tile:hover { transform: translateY(-2px); }
 .char-icon {
-  width: 56px; height: 56px; flex: none; display: grid; place-items: center; background: var(--c2);
+  width: 48px; height: 48px; flex: none; display: grid; place-items: center; background: var(--c2);
 }
-.char-icon .sprite { width: 48px; height: 48px; }
-.char-tile:nth-child(2) .char-icon { background: var(--c3); }
-.char-tile:nth-child(3) .char-icon { background: var(--c4); }
-.char-tile:nth-child(4) .char-icon { background: var(--c5); }
-.char-name { flex: 1; font-family: var(--font-big); font-size: 1.1rem; }
+.char-icon .sprite { width: 40px; height: 40px; }
+.char-tile:nth-child(4n+2) .char-icon { background: var(--c3); }
+.char-tile:nth-child(4n+3) .char-icon { background: var(--c4); }
+.char-tile:nth-child(4n+4) .char-icon { background: var(--c5); }
+.char-name { flex: 1; min-width: 0; font-family: var(--font-big); font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .char-tile.on { background: var(--accent); color: var(--on-accent); }
 .char-tile.on .char-icon { background: var(--c1); }
 .char-tile.on .sprite { animation: bob 0.8s steps(2) infinite; }

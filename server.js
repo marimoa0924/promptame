@@ -19,7 +19,7 @@ import { createSeen } from './game/seen.js';
 import { createRanking } from './game/ranking.js';
 
 const PORT = Number(process.env.PORT) || 3000;
-const CHARACTERS = ['cat', 'pigeon', 'dog', 'otaku'];
+const CHARACTERS = ['cat', 'pigeon', 'dog', 'otaku', 'miku', 'snake', 'engineer', 'mantis', 'ditto', 'chiikawa'];
 const MAPS = ['east', 'future', 'medieval', 'space'];
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 

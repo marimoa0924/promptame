@@ -5,6 +5,12 @@ export const CHARACTERS = {
   pigeon: { name: '비둘기' },
   dog: { name: '강아지' },
   otaku: { name: '씹덕' },
+  miku: { name: '미쿠' },
+  snake: { name: '뱀' },
+  engineer: { name: '공대생' },
+  mantis: { name: '사마귀' },
+  ditto: { name: '메타몽' },
+  chiikawa: { name: '치이카와' },
 };
 
 export const charSvg = (id, cls = '') => spriteSvg(id in CHARACTERS ? id : 'cat', cls);
