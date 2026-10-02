@@ -2,6 +2,7 @@
 // 네트워크 응답을 기다리는 동안에도 루프와 애니메이션은 계속 돈다.
 import { socket, session, request } from './net.js';
 import { $, refs, charSvg, toast, copyText, formatTime, replay } from './ui.js';
+import { syncBgm, stopBgm } from './bgm.js';
 import { applyTheme, sceneSvg, sparkle, SCENE_W, SCENE_TOP, SCENE_BOTTOM, SCENE_FLOOR } from './maps.js';
 import { coach } from './tutorial.js';
 import { checkPrompt } from '/shared/promptRules.js';
@@ -138,6 +139,7 @@ export class Game {
       for (const b of Object.values(this.boards)) b.r.scene.innerHTML = sceneSvg(this.map);
     }
     this.room = room;
+    syncBgm(room.state, room.settings.map);
     this.offset = room.serverNow - Date.now();
     this.me = room.players.find((p) => p.id === session.playerId) ?? null;
     this.opp = room.players.find((p) => p.id !== session.playerId) ?? null;
@@ -585,6 +587,7 @@ export class Game {
   }
 
   reset() {
+    stopBgm();
     this.room = null;
     this.map = null;
     this.me = this.opp = null;

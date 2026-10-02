@@ -803,3 +803,7 @@ body.shake { animation: shake 0.12s steps(2) 5; }
 .tips-dots span { width: 8px; height: 8px; background: var(--line); }
 .tips-dots span.on { background: var(--ink); }
 @media (max-width: 480px) { .tips-stage { flex-direction: column; } .tips-bubble::before { display: none; } }
+
+/* ===== 배경음악 켜기/끄기 ===== */
+.bgm-btn { position: fixed; right: 12px; bottom: 12px; z-index: 40; width: 40px; height: 40px; font-size: 1.2rem; cursor: pointer; background: var(--c1); color: var(--ink); border: 0; box-shadow: var(--frame-sm), var(--drop); }
+.bgm-btn:hover { background: var(--c2); }
