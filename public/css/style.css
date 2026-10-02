@@ -780,3 +780,26 @@ body.shake { animation: shake 0.12s steps(2) 5; }
 .ranking-solo-filter { display: grid; gap: 6px; margin-bottom: 8px; }
 .pf-out.solo { background: var(--accent-2, #888); color: var(--ink); }
 .pf-solo-best { margin: 2px 0; }
+
+/* ===== 고득점 팁(비둘기 튜토리얼) ===== */
+.tips-card { width: min(560px, 96vw); text-align: left; }
+.tips-stage { display: flex; gap: 14px; align-items: center; margin: 10px 0 14px; }
+.tips-pigeon { flex: 0 0 96px; width: 96px; height: 96px; }
+.tips-pigeon svg { width: 100%; height: 100%; image-rendering: pixelated; }
+.tips-pigeon.hop { animation: tips-hop 0.45s ease-out; }
+@keyframes tips-hop { 0% { transform: translateY(0); } 40% { transform: translateY(-14px); } 100% { transform: translateY(0); } }
+.tips-bubble { position: relative; flex: 1; padding: 12px 14px; background: var(--paper); box-shadow: var(--frame-sm); line-height: 1.55; }
+.tips-bubble::before { content: ''; position: absolute; left: -10px; top: 24px; width: 10px; height: 14px; background: var(--paper); clip-path: polygon(100% 0, 0 50%, 100% 100%); }
+.tips-bubble p { margin: 0; }
+.tips-examples { display: grid; gap: 8px; margin-bottom: 10px; }
+.tip-ex { padding: 8px 12px; border-left: 4px solid; background: color-mix(in srgb, var(--paper) 80%, transparent); }
+.tip-ex b { font-size: .85rem; }
+.tip-ex p { margin: 4px 0 0; white-space: pre-wrap; }
+.tip-ex.good { border-color: #2bb673; }
+.tip-ex.bad { border-color: var(--danger); opacity: .8; }
+.tips-mine { margin: 0 0 8px; padding: 6px 10px; font-size: .9rem; background: rgba(255, 214, 102, .25); }
+.tips-note { margin: 0 0 10px; color: var(--muted); font-size: .88rem; min-height: 1.2em; }
+.tips-dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 12px; }
+.tips-dots span { width: 8px; height: 8px; background: var(--line); }
+.tips-dots span.on { background: var(--ink); }
+@media (max-width: 480px) { .tips-stage { flex-direction: column; } .tips-bubble::before { display: none; } }

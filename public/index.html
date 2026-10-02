@@ -48,6 +48,7 @@
       <button class="btn btn-accent2" id="btn-tutorial">📘 처음이라면? 튜토리얼</button>
       <button class="btn" id="btn-ranking">🏆 랭킹</button>
       <button class="btn" id="btn-profile">📊 내 기록</button>
+      <button class="btn btn-accent2" id="btn-tips">🕊️ 고득점 팁</button>
       <button class="btn" id="btn-shop">🪙 상점·뽑기</button>
       <button class="btn btn-ghost" id="btn-logout">로그아웃</button>
       <p class="account-chip" id="account-chip"></p>
@@ -323,6 +324,26 @@
       <ol class="ranking-list" data-ref="list"></ol>
       <p class="muted ranking-rules" data-ref="rules">승리 +25 · 무승부 +5 · 패배 -10 · 포기 -15 (상대 포기로 이기면 +12). PASS가 너무 적은 판과 같은 상대와 1시간에 5판 넘게 한 판은 반영되지 않아요. 이 브라우저(기기)를 기준으로 쌓여요.</p>
       <div class="modal-actions"><button class="btn" data-ref="close">닫기</button></div>
+    </div>
+  </div>
+
+  <!-- 고득점 팁: 비둘기 튜토리얼 -->
+  <div class="modal" id="modal-tips" hidden>
+    <div class="modal-card tips-card">
+      <h2 class="panel-title" data-ref="title"></h2>
+      <div class="tips-stage">
+        <div class="tips-pigeon" data-ref="pigeon"></div>
+        <div class="tips-bubble"><p data-ref="say"></p></div>
+      </div>
+      <div class="tips-examples" data-ref="example"></div>
+      <p class="tips-mine" data-ref="mine" hidden></p>
+      <p class="tips-note" data-ref="note"></p>
+      <div class="tips-dots" data-ref="dots"></div>
+      <div class="modal-actions">
+        <button class="btn" data-ref="prev">◀ 이전</button>
+        <button class="btn btn-primary" data-ref="next">다음 ▶</button>
+        <button class="btn btn-ghost" data-ref="close">닫기</button>
+      </div>
     </div>
   </div>
 

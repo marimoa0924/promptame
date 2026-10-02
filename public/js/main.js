@@ -4,6 +4,7 @@ import { initLobby } from './lobby.js';
 import { initRanking } from './ranking.js';
 import { startAuth, onAccount, setAccount, logout, state as authState } from './auth.js';
 import { initProfile } from './profile.js';
+import { initTips } from './tips.js';
 import { initShop } from './shop.js';
 import { Game } from './game.js';
 import { Finale } from './finale.js';
@@ -19,7 +20,9 @@ const finale = new Finale({ onLeave: leaveRoom, onRematch: rematch });
 const shop = initShop();
 const lobby = initLobby({ onEnterRoom: enterRoom, onOpenShop: () => shop.open() });
 const ranking = initRanking();
-initProfile();
+const openTips = initTips();
+initProfile({ openTips });
+$('#btn-tips').addEventListener('click', () => openTips());
 
 // 계정 정보가 바뀔 때마다(로그인, 상점, 경기 정산) 로비 화면을 맞춘다
 function refreshAccount() {

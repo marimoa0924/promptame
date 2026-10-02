@@ -24,7 +24,7 @@ function bar(label, share, note = '') {
   return row;
 }
 
-export function initProfile() {
+export function initProfile({ openTips } = {}) {
   const modal = $('#modal-profile');
   const r = refs(modal);
 
@@ -68,6 +68,12 @@ export function initProfile() {
 
     // 프롬프트 습관
     const hab = section('프롬프트 작성 습관');
+    if (openTips) {
+      const b = el('button', 'btn btn-accent2', '🕊️ 고득점 팁 (비둘기 선생님)');
+      b.type = 'button';
+      b.addEventListener('click', () => openTips(habit));
+      hab.append(b);
+    }
     if (!habit.enough) {
       hab.append(el('p', 'muted', `프롬프트를 ${habit.need}개 더 쓰면 나의 작성 유형을 알려 줄게요! (지금 ${habit.count}개 기록됨)`));
     } else {
