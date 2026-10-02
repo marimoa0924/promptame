@@ -14,7 +14,7 @@ import { Server } from 'socket.io';
 import { Room } from './game/room.js';
 import { createAIFromEnv, listModels } from './game/gemini.js';
 import { createAccounts } from './game/accounts.js';
-import { verifyGoogleIdToken, GoogleAuthError, clientIdFromJson } from './game/googleAuth.js';
+import { verifyGoogleIdToken, GoogleAuthError, clientIdFromJson, checkClientId } from './game/googleAuth.js';
 import { readdirSync, readFileSync } from 'node:fs';
 import { createJsonStore } from './game/jsonStore.js';
 import { createSeen } from './game/seen.js';
@@ -315,7 +315,19 @@ io.on('connection', (socket) => {
 });
 
 // 키가 있으면 서버를 켤 때 한 번 호출해서 연결이 되는지 바로 알려 준다. 끄려면 AI_SELFTEST=0
+async function googleSelfTest() {
+  if (!GOOGLE_CLIENT_ID || process.env.AI_SELFTEST === '0') return;
+  const r = await checkClientId(GOOGLE_CLIENT_ID);
+  if (r.status === 'NOT_FOUND') {
+    console.log('  ❌ 구글이 이 클라이언트 ID를 모른대요 (invalid_client). 구글 로그인이 401 invalid_client로 실패해요.');
+    console.log(`     쓰고 있는 ID: ${GOOGLE_CLIENT_ID}`);
+    console.log('     → 구글 콘솔(API 및 서비스 > 사용자 인증 정보)에 보이는 "웹 애플리케이션" 클라이언트 ID와 글자 하나까지 같은지, 지운 클라이언트가 아닌지 확인하세요.');
+  } else if (r.status === 'FOUND') console.log('  ✅ 구글이 이 클라이언트 ID를 인식해요');
+  else console.log(`  (구글 클라이언트 ID 확인은 못 했어요: ${r.detail})`);
+}
+
 async function selfTest() {
+  googleSelfTest();
   if (ai.kind !== 'gemini' || process.env.AI_SELFTEST === '0') return;
   const r = await ai.generate('안녕이라고만 답해 줘');
   if (r.status === 'OK') {

@@ -5,7 +5,7 @@ import { createJsonStore } from './jsonStore.js';
 import { createSeen } from './seen.js';
 import { createRanking } from './ranking.js';
 import { createAccounts, ECON } from './accounts.js';
-import { verifyGoogleIdToken, GoogleAuthError, clientIdFromJson } from './googleAuth.js';
+import { verifyGoogleIdToken, GoogleAuthError, clientIdFromJson, checkClientId } from './googleAuth.js';
 
 function setup(opts = {}) {
   const store = createJsonStore(null);
@@ -232,4 +232,13 @@ test('구글 콘솔에서 내려받은 JSON에서 클라이언트 ID만 꺼낸�
   assert.equal(clientIdFromJson('{깨진'), null);
   assert.equal(clientIdFromJson('{}'), null);
   assert.equal(JSON.stringify(clientIdFromJson(web)).includes('GOCSPX'), false); // 비밀번호는 읽지 않는다
+});
+
+test('구글이 클라이언트 ID를 아는지 확인: 오류 페이지로 보내면 NOT_FOUND', async () => {
+  const err = (text) => ({ headers: { get: () => `https://accounts.google.com/signin/oauth/error?authError=${encodeURIComponent(Buffer.from(text).toString('base64'))}&client_id=x` } });
+  assert.equal((await checkClientId('x', { fetchImpl: async () => err('\n\x0einvalid_client\x12\x1fThe OAuth client was not found.') })).status, 'NOT_FOUND');
+  // ID는 있지만 주소가 안 맞는 경우는 ID가 있다는 뜻이다
+  assert.equal((await checkClientId('x', { fetchImpl: async () => err('redirect_uri_mismatch') })).status, 'FOUND');
+  assert.equal((await checkClientId('x', { fetchImpl: async () => ({ headers: { get: () => 'https://accounts.google.com/v3/signin/identifier' } }) })).status, 'FOUND');
+  assert.equal((await checkClientId('x', { fetchImpl: async () => { throw new Error('offline'); } })).status, 'UNKNOWN');
 });

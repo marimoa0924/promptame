@@ -46,3 +46,21 @@ export function clientIdFromJson(text) {
   }
   return null;
 }
+
+// 구글에 이 클라이언트 ID가 실제로 있는지 물어본다(서버를 켤 때 한 번). 구글은 모르는 ID로 로그인을 시작하면
+// /signin/oauth/error 페이지로 보내면서 오류 이름(invalid_client 등)을 주소에 담는다. 그것을 읽는다.
+// 결과: { status: 'FOUND' | 'NOT_FOUND' | 'UNKNOWN', detail }
+export async function checkClientId(clientId, { fetchImpl = globalThis.fetch } = {}) {
+  try {
+    const url = `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({ client_id: clientId, response_type: 'token', scope: 'openid', redirect_uri: 'http://localhost' })}`;
+    const res = await fetchImpl(url, { redirect: 'manual' });
+    const loc = res.headers?.get?.('location') ?? '';
+    const m = loc.match(/[?&]authError=([^&]+)/);
+    if (!m) return { status: 'FOUND', detail: '' }; // 오류 페이지로 안 보내면 로그인 화면으로 가는 중이라는 뜻이다
+    const text = Buffer.from(decodeURIComponent(m[1]), 'base64').toString('utf8');
+    if (/invalid_client/.test(text)) return { status: 'NOT_FOUND', detail: text.replace(/[^\x20-\x7e]+/g, ' ').trim() };
+    return { status: 'FOUND', detail: text.replace(/[^\x20-\x7e]+/g, ' ').trim() }; // 예: redirect_uri_mismatch는 ID는 있다는 뜻
+  } catch (err) {
+    return { status: 'UNKNOWN', detail: String(err?.message ?? err) };
+  }
+}
