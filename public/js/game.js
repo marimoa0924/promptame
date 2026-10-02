@@ -3,6 +3,7 @@
 import { socket, session, request } from './net.js';
 import { $, refs, charSvg, toast, copyText, formatTime, replay } from './ui.js';
 import { syncBgm, stopBgm } from './bgm.js';
+import { playSfx } from './sfx.js';
 import { applyTheme, sceneSvg, sparkle, SCENE_W, SCENE_TOP, SCENE_BOTTOM, SCENE_FLOOR } from './maps.js';
 import { coach } from './tutorial.js';
 import { checkPrompt } from '/shared/promptRules.js';
@@ -368,6 +369,7 @@ export class Game {
     clearTimeout(b.timers.mood);
     b.timers.mood = setTimeout(() => b.r.avatar.classList.remove('cheer', 'cry'), 2600);
     this.say(b, pass ? '야호!' : '엉엉…');
+    if (b.isMe) playSfx(pass ? 'pass' : 'retry');
 
     if (b.isMe) coach.emit('result');
   }

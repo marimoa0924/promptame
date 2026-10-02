@@ -1,4 +1,5 @@
 // 게임 종료 연출: 흑백 전환 → 두둥! → The Winner is…… → 승자 이름 → 결과 카드
+import { playSfx } from './sfx.js';
 import { $, refs, CHARACTERS, charSvg, formatTime, replay } from './ui.js';
 
 const REASON = {
@@ -78,6 +79,8 @@ export class Finale {
 
     r.intro.hidden = true;
     r.card.hidden = false;
+    if (outcome === 'win' || (outcome === 'solo' && solo?.isBest)) playSfx('win');
+    else if (outcome === 'lose') playSfx('lose');
     r.card.className = `finale-card ${outcome}`;
     r.title.textContent = { win: 'WIN!', lose: 'LOSE…', draw: 'DRAW', void: '무효', solo: solo?.isBest ? '신기록!' : '솔로 완료!' }[outcome];
     r.reason.textContent =

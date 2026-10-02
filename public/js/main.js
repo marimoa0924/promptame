@@ -6,6 +6,7 @@ import { startAuth, onAccount, setAccount, logout, state as authState } from './
 import { initProfile } from './profile.js';
 import { initTips } from './tips.js';
 import { initBgmButton } from './bgm.js';
+import { initClickSfx } from './sfx.js';
 import { initShop } from './shop.js';
 import { Game } from './game.js';
 import { Finale } from './finale.js';
@@ -22,6 +23,7 @@ const shop = initShop();
 const lobby = initLobby({ onEnterRoom: enterRoom, onOpenShop: () => shop.open() });
 const ranking = initRanking();
 initBgmButton($('#btn-bgm'));
+initClickSfx();
 const openTips = initTips();
 initProfile({ openTips });
 $('#btn-tips').addEventListener('click', () => openTips());

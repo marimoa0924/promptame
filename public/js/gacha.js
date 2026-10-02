@@ -1,5 +1,6 @@
 // 뽑기 연출: 캡슐이 흔들리며 두근두근 → 실루엣 룰렛이 점점 느려짐 → 반짝 터지며 캐릭터 공개.
 // 결과는 서버가 이미 정했고, 여기서는 보여 주기만 한다. 화면을 누르면 건너뛴다.
+import { playSfx } from './sfx.js';
 import { CHARACTERS, charSvg } from './ui.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -106,7 +107,7 @@ export async function playGacha(root, resultId, { total = 0, owned = [] } = {}) 
   const card = el('div', 'gc-reveal', `<span class="gc-new">NEW!</span><span class="gc-char">${charSvg(resultId)}</span><b>🎉 ${c?.name ?? resultId} 획득!</b>${total ? `<small>${total}종 중 ${owned.length}종 보유</small>` : ''}`);
   stage.append(card);
   confetti(stage);
-  [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, 160, 'triangle', 0.08), i * 90));
+  playSfx('gacha');
 
   await new Promise((resolve) => {
     const t = setTimeout(done, 3200);

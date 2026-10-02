@@ -35,12 +35,15 @@ function apply() {
 }
 
 // 방 상태가 바뀔 때마다 부른다. map: 'east' | 'future' | 'medieval' | 'space'
+// 판이 진행 중이면 그 맵의 곡, 대기방과 로비는 로비 곡, 결과 화면(ended)은 효과음만 들리도록 조용히 둔다.
 export function syncBgm(state, map) {
-  wanted = (state === 'countdown' || state === 'playing') && map ? map : null;
+  if (state === 'countdown' || state === 'playing') wanted = map || null;
+  else if (state === 'ended') wanted = null;
+  else wanted = 'lobby';
   apply();
 }
 
-export const stopBgm = () => syncBgm(null, null);
+export const stopBgm = () => syncBgm('lobby', null); // 방을 나가면 로비 곡
 
 export function initBgmButton(btn) {
   const paint = () => {
@@ -58,4 +61,5 @@ export function initBgmButton(btn) {
   document.addEventListener('pointerdown', apply);
   document.addEventListener('keydown', apply);
   paint();
+  syncBgm('lobby', null); // 처음에는 로비 곡. 브라우저가 막으면 첫 클릭 때 시작된다
 }
