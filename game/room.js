@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { checkPrompt, checkAnswer, drawSequence } from '../promptRules.js';
 import { createMockAI, generateWithRetry } from './gemini.js';
-import { botPrompt, botEmoji, BOT_NAMES } from './bot.js';
+import { botPrompt, BOT_NAMES } from './bot.js';
 
 const DATA = JSON.parse(readFileSync(new URL('../problems.json', import.meta.url), 'utf8'));
 const DIFFICULTY_KO = { easy: '쉬움', normal: '보통', hard: '어려움' };
@@ -337,10 +337,7 @@ export class Room {
     this.emit('ai:result', { playerId: p.id, ...result, verdict });
     this.broadcast();
 
-    if (p.isBot) {
-      if (Math.random() < 0.4) this.later(() => this.emit('player:emote', { playerId: p.id, emoji: botEmoji(result.pass) }), 600);
-      this.scheduleBot(p, 2500 + Math.random() * 3500);
-    }
+    if (p.isBot) this.scheduleBot(p, 2500 + Math.random() * 3500);
   }
 
   emitTo(p, event, payload) {

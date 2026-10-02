@@ -17,7 +17,6 @@ import { checkNickname, nicknameError } from './nickname.js';
 
 const PORT = Number(process.env.PORT) || 3000;
 const CHARACTERS = ['cat', 'pigeon', 'dog', 'otaku'];
-const EMOTES = ['😹', '👍', '🔥', '😭', '🫵', '🙏'];
 const MAPS = ['east', 'future', 'medieval', 'space'];
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
@@ -132,14 +131,6 @@ io.on('connection', (socket) => {
     const code = socket.data.roomCode;
     if (!code) return;
     socket.to(code).emit('player:typing', { playerId: socket.data.playerId, len: Number(len) || 0 });
-  });
-
-  socket.on('player:emote', ({ emoji } = {}) => {
-    const code = socket.data.roomCode;
-    const now = Date.now();
-    if (!code || !EMOTES.includes(emoji) || now - (socket.data.lastEmote ?? 0) < 800) return;
-    socket.data.lastEmote = now;
-    socket.to(code).emit('player:emote', { playerId: socket.data.playerId, emoji });
   });
 
   socket.on('disconnect', () => {

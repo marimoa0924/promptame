@@ -32,7 +32,7 @@ npm run dev              # 서버 첫 줄에 'AI: Gemini (모델명)'이 나오�
 5. 종료 → 흑백 전환 → 두둥! → The Winner is…… → 결과 카드 (총 시간 / 포인트 / 승패, 폭죽 or 우는 캐릭터)
 6. **한번 더 하기**(같은 방 설정) / **나가기**(로비)
 
-캐릭터는 PASS면 "야호!", RETRY면 울어요. 말은 이모티콘으로만 하고, 상대의 프롬프트는 판이 끝날 때까지 보이지 않아요.
+캐릭터는 PASS면 "야호!", RETRY면 울어요. 채팅 기능은 없고, 상대의 프롬프트는 판이 끝날 때까지 보이지 않아요.
 
 ## 구조
 
@@ -40,7 +40,7 @@ npm run dev              # 서버 첫 줄에 'AI: Gemini (모델명)'이 나오�
 server.js           Express + Socket.IO, 방 목록과 소켓 이벤트 연결
 game/room.js        방 상태 머신 (waiting → countdown → playing → ended → 한번 더), 점수·얼음·평가 시간
 game/gemini.js      AI 클라이언트 (Gemini 호출 + 키 없을 때 쓰는 목업)
-game/bot.js         연습봇 프롬프트·이모티콘
+game/bot.js         연습봇 프롬프트
 promptRules.js      금지어 검사·답변 판정·출제 (서버와 브라우저가 같이 씀)
 problems.json       문제 데이터 (엑셀 → build-problems.mjs)
 public/js/main.js   화면 전환, 종료·한번 더 하기·튜토리얼 연결
@@ -76,7 +76,7 @@ public/js/bg.js     디더링 픽셀 배경 캔버스
 |---|---|
 | `room:create` `room:join` `room:leave` `room:rematch` `room:addBot` | `room:state` (사람마다 따로 보내는 스냅샷) |
 | `prompt:submit` `prompt:skip` | `ai:start` `ai:chunk` `ai:judge` `ai:result` `ai:void` |
-| `player:typing` `player:emote` | `player:typing` `player:emote` |
+| `player:typing` | `player:typing` |
 | | `game:event` (얼음) `game:end` |
 
 ## 다음 할 일

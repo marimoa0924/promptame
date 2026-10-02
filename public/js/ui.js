@@ -9,8 +9,6 @@ export const CHARACTERS = {
 
 export const charSvg = (id, cls = '') => spriteSvg(id in CHARACTERS ? id : 'cat', cls);
 
-export const EMOTES = ['😹', '👍', '🔥', '😭', '🫵', '🙏'];
-
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
