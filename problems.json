@@ -1,0 +1,1081 @@
+{
+  "problems": [
+    {
+      "id": 1,
+      "topic": "소나기",
+      "keywords": [
+        "우산",
+        "장마",
+        "빗방울"
+      ],
+      "difficulty": "쉬움",
+      "category": "생활",
+      "extraForbidden": [
+        "rain",
+        "shower",
+        "downpour",
+        "umbrella",
+        "monsoon",
+        "raindrop"
+      ]
+    },
+    {
+      "id": 2,
+      "topic": "피자",
+      "keywords": [
+        "치즈",
+        "토마토",
+        "도우"
+      ],
+      "difficulty": "쉬움",
+      "category": "음식",
+      "extraForbidden": [
+        "pizza",
+        "cheese",
+        "tomato",
+        "dough"
+      ]
+    },
+    {
+      "id": 3,
+      "topic": "강아지",
+      "keywords": [
+        "산책",
+        "꼬리",
+        "후각"
+      ],
+      "difficulty": "쉬움",
+      "category": "동물",
+      "extraForbidden": [
+        "dog",
+        "walk",
+        "tail",
+        "smell"
+      ]
+    },
+    {
+      "id": 4,
+      "topic": "자전거",
+      "keywords": [
+        "페달",
+        "바퀴",
+        "체인"
+      ],
+      "difficulty": "쉬움",
+      "category": "생활",
+      "extraForbidden": [
+        "bicycle",
+        "pedal",
+        "wheel",
+        "chain"
+      ]
+    },
+    {
+      "id": 5,
+      "topic": "나무",
+      "keywords": [
+        "뿌리",
+        "줄기",
+        "나이테"
+      ],
+      "difficulty": "쉬움",
+      "category": "과학",
+      "extraForbidden": [
+        "tree",
+        "root",
+        "stem",
+        "growth ring"
+      ]
+    },
+    {
+      "id": 6,
+      "topic": "무지개",
+      "keywords": [
+        "햇빛",
+        "프리즘",
+        "굴절"
+      ],
+      "difficulty": "쉬움",
+      "category": "과학",
+      "extraForbidden": [
+        "rainbow",
+        "sunlight",
+        "prism",
+        "refraction"
+      ]
+    },
+    {
+      "id": 7,
+      "topic": "김치",
+      "keywords": [
+        "발효",
+        "배추",
+        "고춧가루"
+      ],
+      "difficulty": "쉬움",
+      "category": "음식",
+      "extraForbidden": [
+        "kimchi",
+        "fermentation",
+        "cabbage",
+        "red pepper powder"
+      ]
+    },
+    {
+      "id": 8,
+      "topic": "고양이",
+      "keywords": [
+        "수염",
+        "발톱",
+        "야행성"
+      ],
+      "difficulty": "쉬움",
+      "category": "동물",
+      "extraForbidden": [
+        "cat",
+        "whisker",
+        "claw",
+        "nocturnal"
+      ]
+    },
+    {
+      "id": 9,
+      "topic": "도서관",
+      "keywords": [
+        "대출",
+        "서가",
+        "열람"
+      ],
+      "difficulty": "쉬움",
+      "category": "문화예술",
+      "extraForbidden": [
+        "library",
+        "loan",
+        "bookshelf",
+        "reading"
+      ]
+    },
+    {
+      "id": 10,
+      "topic": "축구",
+      "keywords": [
+        "골키퍼",
+        "드리블",
+        "패스"
+      ],
+      "difficulty": "쉬움",
+      "category": "문화예술",
+      "extraForbidden": [
+        "soccer",
+        "goalkeeper",
+        "dribble",
+        "pass"
+      ]
+    },
+    {
+      "id": 11,
+      "topic": "버스",
+      "keywords": [
+        "정류장",
+        "승객",
+        "노선"
+      ],
+      "difficulty": "쉬움",
+      "category": "생활",
+      "extraForbidden": [
+        "bus",
+        "bus stop",
+        "passenger",
+        "route"
+      ]
+    },
+    {
+      "id": 12,
+      "topic": "아이스크림",
+      "keywords": [
+        "냉동",
+        "우유",
+        "당분"
+      ],
+      "difficulty": "쉬움",
+      "category": "음식",
+      "extraForbidden": [
+        "ice cream",
+        "frozen",
+        "milk",
+        "sugar"
+      ]
+    },
+    {
+      "id": 13,
+      "topic": "나비",
+      "keywords": [
+        "애벌레",
+        "날개",
+        "번데기"
+      ],
+      "difficulty": "쉬움",
+      "category": "동물",
+      "extraForbidden": [
+        "butterfly",
+        "caterpillar",
+        "wing",
+        "chrysalis"
+      ]
+    },
+    {
+      "id": 14,
+      "topic": "보름달",
+      "keywords": [
+        "위성",
+        "지구",
+        "궤도"
+      ],
+      "difficulty": "쉬움",
+      "category": "과학",
+      "extraForbidden": [
+        "full moon",
+        "moon",
+        "satellite",
+        "moonlight",
+        "orbit"
+      ]
+    },
+    {
+      "id": 15,
+      "topic": "한글",
+      "keywords": [
+        "자음",
+        "모음",
+        "음절"
+      ],
+      "difficulty": "쉬움",
+      "category": "문화예술",
+      "extraForbidden": [
+        "Hangul",
+        "consonant",
+        "vowel",
+        "syllable"
+      ]
+    },
+    {
+      "id": 16,
+      "topic": "시장",
+      "keywords": [
+        "상인",
+        "흥정",
+        "물건"
+      ],
+      "difficulty": "쉬움",
+      "category": "사회",
+      "extraForbidden": [
+        "market",
+        "merchant",
+        "price",
+        "goods"
+      ]
+    },
+    {
+      "id": 17,
+      "topic": "지도",
+      "keywords": [
+        "축척",
+        "방위",
+        "기호"
+      ],
+      "difficulty": "쉬움",
+      "category": "사회",
+      "extraForbidden": [
+        "map",
+        "scale",
+        "direction",
+        "symbol"
+      ]
+    },
+    {
+      "id": 18,
+      "topic": "사진",
+      "keywords": [
+        "촬영",
+        "카메라",
+        "구도"
+      ],
+      "difficulty": "쉬움",
+      "category": "문화예술",
+      "extraForbidden": [
+        "photograph",
+        "photography",
+        "camera",
+        "composition"
+      ]
+    },
+    {
+      "id": 19,
+      "topic": "컴퓨터",
+      "keywords": [
+        "키보드",
+        "마우스",
+        "화면"
+      ],
+      "difficulty": "쉬움",
+      "category": "정보기술",
+      "extraForbidden": [
+        "computer",
+        "keyboard",
+        "mouse",
+        "screen"
+      ]
+    },
+    {
+      "id": 20,
+      "topic": "우유",
+      "keywords": [
+        "칼슘",
+        "단백질",
+        "지방"
+      ],
+      "difficulty": "쉬움",
+      "category": "음식",
+      "extraForbidden": [
+        "milk",
+        "calcium",
+        "protein",
+        "fat"
+      ]
+    },
+    {
+      "id": 21,
+      "topic": "광합성",
+      "keywords": [
+        "엽록체",
+        "포도당",
+        "산소"
+      ],
+      "difficulty": "보통",
+      "category": "과학",
+      "extraForbidden": [
+        "photosynthesis",
+        "chloroplast",
+        "glucose",
+        "oxygen"
+      ]
+    },
+    {
+      "id": 22,
+      "topic": "미토콘드리아",
+      "keywords": [
+        "세포호흡",
+        "에너지",
+        "ATP"
+      ],
+      "difficulty": "보통",
+      "category": "과학",
+      "extraForbidden": [
+        "mitochondria",
+        "cellular respiration",
+        "energy",
+        "adenosine triphosphate",
+        "에이티피"
+      ]
+    },
+    {
+      "id": 23,
+      "topic": "증발",
+      "keywords": [
+        "수증기",
+        "온도",
+        "기화"
+      ],
+      "difficulty": "보통",
+      "category": "과학",
+      "extraForbidden": [
+        "evaporation",
+        "water vapor",
+        "temperature",
+        "vaporization"
+      ]
+    },
+    {
+      "id": 24,
+      "topic": "지진",
+      "keywords": [
+        "진앙",
+        "진원",
+        "진동"
+      ],
+      "difficulty": "보통",
+      "category": "과학",
+      "extraForbidden": [
+        "earthquake",
+        "epicenter",
+        "focus",
+        "seismic wave"
+      ]
+    },
+    {
+      "id": 25,
+      "topic": "화산",
+      "keywords": [
+        "마그마",
+        "용암",
+        "분화"
+      ],
+      "difficulty": "보통",
+      "category": "과학",
+      "extraForbidden": [
+        "volcano",
+        "magma",
+        "lava",
+        "eruption"
+      ]
+    },
+    {
+      "id": 26,
+      "topic": "생태계",
+      "keywords": [
+        "먹이사슬",
+        "생산자",
+        "분해자"
+      ],
+      "difficulty": "보통",
+      "category": "과학",
+      "extraForbidden": [
+        "ecosystem",
+        "food chain",
+        "producer",
+        "decomposer"
+      ]
+    },
+    {
+      "id": 27,
+      "topic": "민주주의",
+      "keywords": [
+        "다수결",
+        "선거",
+        "시민"
+      ],
+      "difficulty": "보통",
+      "category": "사회",
+      "extraForbidden": [
+        "democracy",
+        "majority rule",
+        "election",
+        "citizen"
+      ]
+    },
+    {
+      "id": 28,
+      "topic": "시장경제",
+      "keywords": [
+        "수요",
+        "공급",
+        "가격"
+      ],
+      "difficulty": "보통",
+      "category": "사회",
+      "extraForbidden": [
+        "market economy",
+        "demand",
+        "supply",
+        "price"
+      ]
+    },
+    {
+      "id": 29,
+      "topic": "인구",
+      "keywords": [
+        "출생률",
+        "사망률",
+        "고령화"
+      ],
+      "difficulty": "보통",
+      "category": "사회",
+      "extraForbidden": [
+        "population",
+        "birth rate",
+        "death rate",
+        "aging"
+      ]
+    },
+    {
+      "id": 30,
+      "topic": "산업혁명",
+      "keywords": [
+        "증기기관",
+        "공장",
+        "기계화"
+      ],
+      "difficulty": "보통",
+      "category": "역사",
+      "extraForbidden": [
+        "Industrial Revolution",
+        "steam engine",
+        "factory",
+        "mechanization"
+      ]
+    },
+    {
+      "id": 31,
+      "topic": "조선시대",
+      "keywords": [
+        "훈민정음",
+        "한양",
+        "과거제"
+      ],
+      "difficulty": "보통",
+      "category": "역사",
+      "extraForbidden": [
+        "Joseon period",
+        "Hunminjeongeum",
+        "Hanyang",
+        "civil service examination"
+      ]
+    },
+    {
+      "id": 32,
+      "topic": "고려청자",
+      "keywords": [
+        "상감기법",
+        "비색",
+        "도자기"
+      ],
+      "difficulty": "보통",
+      "category": "역사",
+      "extraForbidden": [
+        "Goryeo celadon",
+        "inlay technique",
+        "jade color",
+        "pottery"
+      ]
+    },
+    {
+      "id": 33,
+      "topic": "소화",
+      "keywords": [
+        "위산",
+        "소장",
+        "영양소"
+      ],
+      "difficulty": "보통",
+      "category": "생활",
+      "extraForbidden": [
+        "digestion",
+        "gastric acid",
+        "small intestine",
+        "nutrient"
+      ]
+    },
+    {
+      "id": 34,
+      "topic": "전기회로",
+      "keywords": [
+        "전압",
+        "전류",
+        "저항"
+      ],
+      "difficulty": "보통",
+      "category": "과학",
+      "extraForbidden": [
+        "electric circuit",
+        "voltage",
+        "current",
+        "resistance"
+      ]
+    },
+    {
+      "id": 35,
+      "topic": "인터넷",
+      "keywords": [
+        "프로토콜",
+        "서버",
+        "주소"
+      ],
+      "difficulty": "보통",
+      "category": "정보기술",
+      "extraForbidden": [
+        "internet",
+        "protocol",
+        "server",
+        "address"
+      ]
+    },
+    {
+      "id": 36,
+      "topic": "인공지능",
+      "keywords": [
+        "학습자료",
+        "알고리즘",
+        "모델"
+      ],
+      "difficulty": "보통",
+      "category": "정보기술",
+      "extraForbidden": [
+        "artificial intelligence",
+        "training data",
+        "algorithm",
+        "model"
+      ]
+    },
+    {
+      "id": 37,
+      "topic": "소설",
+      "keywords": [
+        "서술자",
+        "인물",
+        "갈등"
+      ],
+      "difficulty": "보통",
+      "category": "문화예술",
+      "extraForbidden": [
+        "novel",
+        "narrator",
+        "character",
+        "conflict"
+      ]
+    },
+    {
+      "id": 38,
+      "topic": "판소리",
+      "keywords": [
+        "추임새",
+        "소리꾼",
+        "고수"
+      ],
+      "difficulty": "보통",
+      "category": "문화예술",
+      "extraForbidden": [
+        "pansori",
+        "interjection",
+        "singer",
+        "drummer"
+      ]
+    },
+    {
+      "id": 39,
+      "topic": "떡",
+      "keywords": [
+        "전분",
+        "찹쌀",
+        "증편"
+      ],
+      "difficulty": "보통",
+      "category": "음식",
+      "extraForbidden": [
+        "rice cake",
+        "starch",
+        "glutinous rice",
+        "steamed rice cake"
+      ]
+    },
+    {
+      "id": 40,
+      "topic": "초밥",
+      "keywords": [
+        "식초",
+        "생선",
+        "와사비"
+      ],
+      "difficulty": "보통",
+      "category": "음식",
+      "extraForbidden": [
+        "sushi",
+        "vinegar",
+        "fish",
+        "wasabi"
+      ]
+    },
+    {
+      "id": 41,
+      "topic": "상대성이론",
+      "keywords": [
+        "시공간",
+        "중력",
+        "광속"
+      ],
+      "difficulty": "어려움",
+      "category": "과학",
+      "extraForbidden": [
+        "theory of relativity",
+        "spacetime",
+        "gravity",
+        "speed of light"
+      ]
+    },
+    {
+      "id": 42,
+      "topic": "양자역학",
+      "keywords": [
+        "파동함수",
+        "중첩",
+        "불확정성"
+      ],
+      "difficulty": "어려움",
+      "category": "과학",
+      "extraForbidden": [
+        "quantum mechanics",
+        "wave function",
+        "superposition",
+        "uncertainty"
+      ]
+    },
+    {
+      "id": 43,
+      "topic": "유전학",
+      "keywords": [
+        "대립유전자",
+        "유전자형",
+        "표현형"
+      ],
+      "difficulty": "어려움",
+      "category": "과학",
+      "extraForbidden": [
+        "genetics",
+        "allele",
+        "genotype",
+        "phenotype"
+      ]
+    },
+    {
+      "id": 44,
+      "topic": "면역반응",
+      "keywords": [
+        "항체",
+        "항원",
+        "면역세포"
+      ],
+      "difficulty": "어려움",
+      "category": "생활",
+      "extraForbidden": [
+        "immune response",
+        "antibody",
+        "antigen",
+        "immune cell"
+      ]
+    },
+    {
+      "id": 45,
+      "topic": "신경가소성",
+      "keywords": [
+        "시냅스",
+        "학습",
+        "신경회로"
+      ],
+      "difficulty": "어려움",
+      "category": "과학",
+      "extraForbidden": [
+        "neuroplasticity",
+        "synapse",
+        "learning",
+        "neural circuit"
+      ]
+    },
+    {
+      "id": 46,
+      "topic": "판구조론",
+      "keywords": [
+        "섭입",
+        "맨틀",
+        "판경계"
+      ],
+      "difficulty": "어려움",
+      "category": "과학",
+      "extraForbidden": [
+        "plate tectonics",
+        "subduction",
+        "mantle",
+        "plate boundary"
+      ]
+    },
+    {
+      "id": 47,
+      "topic": "행동경제학",
+      "keywords": [
+        "손실회피",
+        "휴리스틱",
+        "편향"
+      ],
+      "difficulty": "어려움",
+      "category": "사회",
+      "extraForbidden": [
+        "behavioral economics",
+        "loss aversion",
+        "heuristic",
+        "bias"
+      ]
+    },
+    {
+      "id": 48,
+      "topic": "사회계약론",
+      "keywords": [
+        "자연상태",
+        "주권",
+        "합의"
+      ],
+      "difficulty": "어려움",
+      "category": "사회",
+      "extraForbidden": [
+        "social contract theory",
+        "state of nature",
+        "sovereignty",
+        "contract"
+      ]
+    },
+    {
+      "id": 49,
+      "topic": "기회비용",
+      "keywords": [
+        "한계효용",
+        "선택",
+        "대안"
+      ],
+      "difficulty": "어려움",
+      "category": "사회",
+      "extraForbidden": [
+        "opportunity cost",
+        "marginal utility",
+        "choice",
+        "alternative"
+      ]
+    },
+    {
+      "id": 50,
+      "topic": "세계화",
+      "keywords": [
+        "가치사슬",
+        "무역",
+        "다국적기업"
+      ],
+      "difficulty": "어려움",
+      "category": "사회",
+      "extraForbidden": [
+        "globalization",
+        "value chain",
+        "trade",
+        "multinational corporation"
+      ]
+    },
+    {
+      "id": 51,
+      "topic": "르네상스",
+      "keywords": [
+        "인문주의",
+        "원근법",
+        "고전주의"
+      ],
+      "difficulty": "어려움",
+      "category": "역사",
+      "extraForbidden": [
+        "Renaissance",
+        "humanism",
+        "perspective",
+        "classicism"
+      ]
+    },
+    {
+      "id": 52,
+      "topic": "산업유산",
+      "keywords": [
+        "문화재생",
+        "보존",
+        "재활용"
+      ],
+      "difficulty": "어려움",
+      "category": "역사",
+      "extraForbidden": [
+        "industrial heritage",
+        "cultural regeneration",
+        "preservation",
+        "reuse"
+      ]
+    },
+    {
+      "id": 53,
+      "topic": "객체지향프로그래밍",
+      "keywords": [
+        "다형성",
+        "상속",
+        "캡슐화"
+      ],
+      "difficulty": "어려움",
+      "category": "정보기술",
+      "extraForbidden": [
+        "object-oriented programming",
+        "polymorphism",
+        "inheritance",
+        "encapsulation"
+      ]
+    },
+    {
+      "id": 54,
+      "topic": "머신러닝",
+      "keywords": [
+        "과적합",
+        "학습데이터",
+        "검증"
+      ],
+      "difficulty": "어려움",
+      "category": "정보기술",
+      "extraForbidden": [
+        "machine learning",
+        "overfitting",
+        "training data",
+        "validation"
+      ]
+    },
+    {
+      "id": 55,
+      "topic": "데이터베이스",
+      "keywords": [
+        "정규화",
+        "테이블",
+        "기본키"
+      ],
+      "difficulty": "어려움",
+      "category": "정보기술",
+      "extraForbidden": [
+        "database",
+        "normalization",
+        "table",
+        "primary key"
+      ]
+    },
+    {
+      "id": 56,
+      "topic": "인상주의",
+      "keywords": [
+        "색채분할",
+        "모네",
+        "야외회화"
+      ],
+      "difficulty": "어려움",
+      "category": "문화예술",
+      "extraForbidden": [
+        "Impressionism",
+        "color division",
+        "Monet",
+        "plein air painting"
+      ]
+    },
+    {
+      "id": 57,
+      "topic": "화성학",
+      "keywords": [
+        "전조",
+        "화음",
+        "음정"
+      ],
+      "difficulty": "어려움",
+      "category": "문화예술",
+      "extraForbidden": [
+        "harmony",
+        "modulation",
+        "chord",
+        "interval"
+      ]
+    },
+    {
+      "id": 58,
+      "topic": "발효식품",
+      "keywords": [
+        "유산균",
+        "미생물",
+        "산도"
+      ],
+      "difficulty": "어려움",
+      "category": "음식",
+      "extraForbidden": [
+        "fermented food",
+        "lactic acid bacteria",
+        "microorganism",
+        "acidity"
+      ]
+    },
+    {
+      "id": 59,
+      "topic": "분자요리",
+      "keywords": [
+        "구형화",
+        "알긴산",
+        "질감"
+      ],
+      "difficulty": "어려움",
+      "category": "음식",
+      "extraForbidden": [
+        "molecular gastronomy",
+        "spherification",
+        "alginate",
+        "texture"
+      ]
+    },
+    {
+      "id": 60,
+      "topic": "동물행동학",
+      "keywords": [
+        "각인",
+        "본능",
+        "사회행동"
+      ],
+      "difficulty": "어려움",
+      "category": "동물",
+      "extraForbidden": [
+        "ethology",
+        "imprinting",
+        "instinct",
+        "social behavior"
+      ]
+    }
+  ],
+  "lengthRules": [
+    {
+      "name": "1문장 이내",
+      "type": "sentences",
+      "value": 1
+    },
+    {
+      "name": "2문장 이내",
+      "type": "sentences",
+      "value": 2
+    },
+    {
+      "name": "3문장 이내",
+      "type": "sentences",
+      "value": 3
+    },
+    {
+      "name": "50자 이내",
+      "type": "chars",
+      "value": 50
+    },
+    {
+      "name": "100자 이내",
+      "type": "chars",
+      "value": 100
+    },
+    {
+      "name": "150자 이내",
+      "type": "chars",
+      "value": 150
+    },
+    {
+      "name": "200자 이내",
+      "type": "chars",
+      "value": 200
+    },
+    {
+      "name": "300자 이내",
+      "type": "chars",
+      "value": 300
+    }
+  ],
+  "difficultyRules": {
+    "쉬움": {
+      "minKeywords": 1
+    },
+    "보통": {
+      "minKeywords": 2
+    },
+    "어려움": {
+      "minKeywords": 3
+    }
+  }
+}
