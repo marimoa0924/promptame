@@ -94,7 +94,7 @@ test('생각 기능 설정을 거부하는 모델이면 그 설정만 빼고 다
     fetchImpl: async (u, init) => {
       const b = JSON.parse(init.body);
       bodies.push(b);
-      if (b.generationConfig.thinkingConfig) return { ok: false, status: 400, json: async () => ({ error: { message: 'thinking_budget is not supported' } }) };
+      if (b.generationConfig.thinkingConfig) return { ok: false, status: 400, json: async () => ({ error: { message: 'Request contains an invalid argument.' } }) };
       return { ok: true, status: 200, json: async () => ({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: '답' }] } }] }) };
     },
   });

@@ -63,9 +63,9 @@ export function createGemini({
         if (!res.ok) {
           errBody = await res.json().catch(() => null);
           // 생각 기능 설정을 받지 않는 모델이면 그 설정만 빼고 한 번 더 보낸다
-          if (res.status === 400 && useThinking && /think/i.test(errBody?.error?.message ?? '')) {
+          if (res.status === 400 && useThinking) {
             useThinking = false;
-            console.warn('[ai] 이 모델은 thinkingBudget 설정을 받지 않아 빼고 호출해요');
+            console.warn(`[ai] 400 오류(${errBody?.error?.message ?? ''}) → thinkingBudget 설정을 빼고 다시 호출해요`);
             res = await call();
             errBody = res.ok ? null : await res.json().catch(() => null);
           }
