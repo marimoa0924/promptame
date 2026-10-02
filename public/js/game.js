@@ -163,6 +163,8 @@ export class Game {
       b.playerId = null;
       b.topicKey = null;
       b.overlayKey = null;
+      b.r.overlay.hidden = true; // 키만 비우면 같은 상태(null)로 보여서 안 숨겨진 채 남는다
+      b.r.overlay.replaceChildren();
       this.stopJudge(b);
       this.hydrateLive(b, null);
       this.setTopicText(b, null);
@@ -689,7 +691,7 @@ export class Game {
         ? `<div class="ov-icon">⏭</div><p>건너뛰는 중<br><b>${sec}s</b></p>`
         : `<div class="ov-icon">❄</div><p>얼음!<br><b>${sec}s</b></p>`;
     }
-    if (key === b.overlayKey) return;
+    if (key === b.overlayKey && b.r.overlay.hidden === (key === null)) return;
     b.overlayKey = key;
     b.r.overlay.hidden = key === null;
     b.r.overlay.className = `board-overlay ${key ? key.split('-')[0] : ''}`;
