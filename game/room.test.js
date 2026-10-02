@@ -12,7 +12,7 @@ const rooms = [];
 afterEach(() => {
   for (const r of rooms.splice(0)) r.close();
 });
-const FAST = { countdownMs: 20, replayTickMs: 1, judgeBaseMs: 5, judgePerLineMs: 1, endGraceMs: 600, waitTtlMs: 600_000, submitGapMs: 0, rematchMs: 600_000 };
+const FAST = { countdownMs: 20, replayTickMs: 1, judgeBaseMs: 5, judgePerLineMs: 1, waitTtlMs: 600_000, submitGapMs: 0, rematchMs: 600_000 };
 
 // 프롬프트에 XQZ1이 들어 있으면 필수어를 모두 담은 짧은 답, XQZ2도 있으면 분량 초과, 그 외에는 필수어 없는 답
 // (영어 PASS는 어떤 문제의 금지어와 겹쳐서 쓰지 않는다)
@@ -173,25 +173,16 @@ test('AI가 끝내 답하지 못하면 시도로 세지 않고 다시 보낼 수
   assert.equal(a.live, null);
 });
 
-test('시간이 끝나기 전에 보낸 요청은 유예 안에 끝나면 점수에 들어가고, 이후 전송은 거절한다', async () => {
-  const c = setup({ settings: { timeLimit: 0.5 }, ai: fakeAI({ delay: 700 }), timing: { ...FAST, endGraceMs: 3000 } });
+test('시간이 끝나면 처리 중이던 요청도 버리고 바로 끝낸다', async () => {
+  const c = setup({ settings: { timeLimit: 0.3 }, ai: fakeAI({ delay: 3000 }) });
   await playing(c);
   assert.equal(c.room.submit('pA', 'XQZ1').ok, true);
-  await until(() => c.room.closing); // 시간이 끝났다
-  assert.equal(c.room.state, 'playing'); // 아직 유예 중
-  assert.equal(c.room.submit('pB', 'XQZ1').ok, false);
+  const t0 = Date.now();
   await until(() => c.room.state === 'ended');
-  assert.equal(c.room.players.get('pA').score, 1);
-  assert.equal(c.events('game:end').at(-1).payload.winnerId, 'pA');
-  assert.equal(c.events('game:end').at(-1).payload.reason, 'timeup');
-});
-
-test('유예가 지나도 안 온 요청은 버리고 끝낸다', async () => {
-  const c = setup({ settings: { timeLimit: 0.3 }, ai: fakeAI({ delay: 3000 }), timing: { ...FAST, endGraceMs: 200 } });
-  await playing(c);
-  c.room.submit('pA', 'XQZ1');
-  await until(() => c.room.state === 'ended');
+  assert.ok(Date.now() - t0 < 1500, '유예 없이 바로 끝나야 한다');
   assert.equal(c.room.players.get('pA').score, 0);
+  assert.equal(c.room.submit('pB', 'XQZ1').ok, false);
+  assert.equal(c.events('game:end').at(-1).payload.reason, 'timeup');
 });
 
 test('점수가 같으면 무승부(0 대 0 포함)', async () => {

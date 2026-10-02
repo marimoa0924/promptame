@@ -189,5 +189,5 @@ game: { phase: "OPEN"|"RESOLVING"|"INTERMISSION", seq, problem, lengthRule, ends
 3. `checkPrompt(text, 서버의 현재 문제, 방 설정의 프롬프트 제한 ?? 2000)`를 한다. 실패하면 `prompt:rejected`. Gemini 호출 없음.
 4. 통과하면 시도 번호를 올리고 `attempt:accepted`를 보낸다.
 5. Gemini를 호출한다(06 문서). 실패나 빈 응답은 재시도한다.
-6. 답변이 오면 `checkAnswer`로 판정한다. 종료 유예를 넘겼다면 결과는 버린다.
+6. 답변이 오면 `checkAnswer`로 판정한다. 시간이 이미 끝났다면 결과는 버린다.
 7. PASS면 점수와 연속 카운트, 페널티를 갱신하고 그 사람의 다음 문제를 연다. RETRY면 연속 카운트의 첫 시도 조건을 깨고 판정을 보낸다.

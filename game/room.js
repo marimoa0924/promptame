@@ -17,7 +17,6 @@ const DEFAULT_TIMING = {
   replayTickMs: REPLAY_TICK_MS,
   judgeBaseMs: 900, // 평가 AI가 답변을 "읽는" 시간. 너무 빨리 채점되면 사용자가 결과를 읽을 틈이 없다.
   judgePerLineMs: 750,
-  endGraceMs: 8000, // 시간이 끝났을 때 이미 보낸 요청을 기다려 주는 시간
   waitTtlMs: 600_000, // 대기방은 10분 안에 상대가 안 오면 닫는다
   submitGapMs: 1000, // 같은 사람의 프롬프트 전송 최소 간격
   rematchMs: 10_000, // 한 번 더 하기 요청이 유효한 시간
@@ -49,7 +48,6 @@ export class Room {
     this.hooks = hooks; // { seen, ranking }. 없으면 해당 기능을 건너뛴다
     this.t = { ...DEFAULT_TIMING, ...timing };
     this.usedIds = []; // 이전 판에서 나온 문제 번호. 한 번 더 하기에서 겹치지 않게 한다.
-    this.closing = false; // 시간이 끝났지만 이미 보낸 요청을 기다리는 중
     this.ai = ai;
     this.mock = createMockAI();
     this.code = code;
@@ -265,7 +263,6 @@ export class Room {
     const duration = this.settings.timeLimit * 1000;
     this.sequence = this.pickSequence(); // 두 사람이 다 들어온 뒤에 뽑아야 두 사람이 본 문제를 피할 수 있다
     this.state = 'playing';
-    this.closing = false;
     this.startedAt = Date.now();
     this.endsAt = this.startedAt + duration;
     this.broadcast();
@@ -273,24 +270,16 @@ export class Room {
     for (const p of this.players.values()) if (p.isBot) this.scheduleBot(p, 2500 + Math.random() * 2500);
   }
 
-  // 시간이 끝났다. 이미 보낸 요청이 있으면 결과를 최대 endGraceMs까지 기다린다. 새 전송은 받지 않는다.
+  // 시간이 끝나면 AI가 답하는 중이든 판정 중이든 바로 끝낸다. 진행 중이던 요청은 버리고 점수에 넣지 않는다.
   timeUp() {
-    this.closing = true;
-    if (![...this.players.values()].some((p) => p.busy)) return this.end('timeup');
-    this.later(() => this.end('timeup'), this.t.endGraceMs);
-    this.broadcast();
-  }
-
-  // 유예 중이던 요청이 모두 끝났으면 바로 종료한다
-  finishIfDrained() {
-    if (this.closing && this.state === 'playing' && ![...this.players.values()].some((p) => p.busy)) this.end('timeup');
+    this.end('timeup');
   }
 
   submit(playerId, raw) {
     const p = this.players.get(playerId);
     if (!p) return { ok: false, error: '플레이어를 찾을 수 없어요' };
     if (this.state !== 'playing') return { ok: false, error: '아직 게임 중이 아니에요' };
-    if (this.closing || Date.now() >= this.endsAt) return { ok: false, error: '시간이 끝났어요' };
+    if (Date.now() >= this.endsAt) return { ok: false, error: '시간이 끝났어요' };
     if (p.busy) return { ok: false, error: 'AI가 아직 답변 중이에요' };
     if (Date.now() < p.frozenUntil) return { ok: false, error: '얼어붙어서 입력할 수 없어요!' };
     if (Date.now() - p.lastSubmitAt < this.t.submitGapMs) return { ok: false, error: '너무 빨라요! 잠깐만 기다려 주세요' };
@@ -325,7 +314,7 @@ export class Room {
     if (!p) return { ok: false, error: '플레이어를 찾을 수 없어요' };
     if (this.settings.tutorial) return { ok: false, error: '튜토리얼에서는 건너뛸 수 없어요' };
     if (this.state !== 'playing') return { ok: false, error: '아직 게임 중이 아니에요' };
-    if (this.closing || Date.now() >= this.endsAt) return { ok: false, error: '시간이 끝났어요' };
+    if (Date.now() >= this.endsAt) return { ok: false, error: '시간이 끝났어요' };
     if (p.busy) return { ok: false, error: 'AI가 답변 중일 때는 건너뛸 수 없어요' };
     if (Date.now() < p.frozenUntil) return { ok: false, error: '지금은 입력할 수 없어요' };
     p.topicIdx += 1;
@@ -356,7 +345,6 @@ export class Room {
       p.live = null;
       this.emitTo(p, 'ai:void', { playerId: p.id, message: 'AI가 답하지 못했어요. 다시 보내 주세요' });
       this.broadcast();
-      this.finishIfDrained();
       return;
     }
 
@@ -410,7 +398,6 @@ export class Room {
     p.busy = false;
     this.emit('ai:result', { playerId: p.id, ...result, verdict });
     this.broadcast();
-    this.finishIfDrained();
 
     if (p.isBot) this.scheduleBot(p, 2500 + Math.random() * 3500);
   }
@@ -439,7 +426,6 @@ export class Room {
 
   end(reason, winnerId, leaverId = null) {
     if (this.state !== 'countdown' && this.state !== 'playing') return;
-    this.closing = false;
     clearTimeout(this.rematchTimer);
     this.rematchTimer = null;
     this.round += 1; // 진행 중이던 AI 답변 중단
