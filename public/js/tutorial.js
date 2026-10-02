@@ -12,36 +12,6 @@ export const LOBBY_STEPS = [
     next: '건너뛰기',
   },
   {
-    target: '#btn-tutorial',
-    text: '<b>📘 튜토리얼</b>은 지금 보고 있는 이 안내예요. 게임 방법이 헷갈리면 언제든 다시 눌러 보세요.',
-    next: '다음',
-  },
-  {
-    target: '#btn-ranking',
-    text: '<b>🏆 랭킹</b>에서는 사람과 겨뤄 쌓은 <b>랭크 점수(RP)</b> 순위와 솔로 최고 기록을 볼 수 있어요. 이기면 오르고 지면 내려가요.',
-    next: '다음',
-  },
-  {
-    target: '#btn-profile',
-    text: '<b>📊 내 기록</b>에서는 내 성적과 최근 경기, 그리고 내가 프롬프트를 쓰는 <b>습관과 유형</b>을 분석해서 알려 줘요.',
-    next: '다음',
-  },
-  {
-    target: '#btn-tips',
-    text: '<b>🕊️ 고득점 팁</b>에서는 비둘기 선생님이 PASS를 잘 받는 프롬프트 작성법을 하나씩 알려 줘요. 막힐 때 눌러 보세요!',
-    next: '다음',
-  },
-  {
-    target: '#btn-shop',
-    text: '<b>🪙 상점·뽑기</b>에서는 경기로 번 코인으로 새 캐릭터를 사거나 뽑을 수 있어요. 모두 모으면 숨은 캐릭터도 열려요!',
-    next: '다음',
-  },
-  {
-    target: '#btn-logout',
-    text: '<b>로그아웃</b>은 다른 계정으로 바꾸고 싶을 때 써요. 게스트 계정은 로그아웃하면 다시 들어오기 어려울 수 있으니 조심하세요.',
-    next: '다음',
-  },
-  {
     target: '.panel-start',
     text: '실전에서는 여기서 <b>방을 만들거나</b> 친구에게 받은 <b>방 코드</b>로 입장해요.<br>지금은 혼자 연습해 볼게요!',
     next: '연습 시작',
@@ -74,7 +44,35 @@ export const GAME_STEPS = [
   },
   {
     target: '#btn-exit',
-    text: '실전에서 <b>3연속 원샷 PASS</b>를 하면 상대가 5초 동안 얼어요.<br>튜토리얼은 여기까지! 남은 시간 동안 자유롭게 연습하거나 나가기를 누르세요.',
+    text: '실전에서 <b>3연속 원샷 PASS</b>를 하면 상대가 5초 동안 얼어요.<br>연습은 여기까지! <b>완료</b>를 누르면 로비로 돌아가서 몇 가지를 더 보여 드릴게요.',
+    next: '완료',
+  },
+];
+
+// 연습이 끝난 뒤 로비에서: 랭킹, 내 기록, 상점·뽑기는 안쪽 화면까지 열어서 보여 주고, 마지막에 고득점 팁을 권한다.
+export const TOUR_STEPS = [
+  {
+    target: '#modal-ranking .modal-card',
+    enter: 'ranking',
+    text: '🏆 <b>랭킹</b> 화면이에요. 사람과 대전하면 승패에 따라 <b>랭크 점수(RP)</b>가 오르내리고, 위쪽 탭에서 <b>대전</b>과 <b>솔로</b> 기록을 오갈 수 있어요.',
+    next: '다음',
+  },
+  {
+    target: '#modal-profile .modal-card',
+    enter: 'profile',
+    text: '📊 <b>내 기록</b>에서는 내 성적과 최근 경기, 그리고 내가 프롬프트를 쓰는 <b>습관과 유형</b>을 분석해서 보여 줘요.',
+    next: '다음',
+  },
+  {
+    target: '#modal-shop .modal-card',
+    enter: 'shop',
+    text: '🪙 <b>상점·뽑기</b>에서는 경기로 번 코인으로 새 캐릭터를 사거나 뽑을 수 있어요. 모두 모으면 숨은 캐릭터도 열려요!',
+    next: '다음',
+  },
+  {
+    target: '#btn-tips',
+    enter: 'closeAll',
+    text: '점수를 더 높이고 싶다면 <b>🕊️ 고득점 팁</b>을 확인해 보세요! 비둘기 선생님이 잘 통하는 프롬프트 작성법을 알려 줘요.',
     next: '완료',
   },
 ];
@@ -103,10 +101,11 @@ class Coach {
     return this.steps[this.i];
   }
 
-  run(steps, { onDone, actions = {} } = {}) {
+  run(steps, { onDone, onEnd, actions = {} } = {}) {
     const looping = this.active;
     this.steps = steps;
     this.onDone = onDone;
+    this.onEnd = onEnd;
     this.actions = actions;
     this.i = -1;
     this.next();
@@ -142,9 +141,12 @@ class Coach {
   }
 
   stop() {
+    const end = this.onEnd;
+    this.onEnd = null;
     this.i = -1;
     this.steps = [];
     this.hole.hidden = this.tip.hidden = true;
+    end?.(); // 끝나거나 중간에 그만둘 때 정리(열어 둔 창 닫기 등)
   }
 
   loop() {

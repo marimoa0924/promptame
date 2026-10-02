@@ -12,7 +12,7 @@ import { Game } from './game.js';
 import { Finale } from './finale.js';
 import { applyTheme } from './maps.js';
 import { startBackground } from './bg.js';
-import { coach, LOBBY_STEPS, GAME_STEPS, EXAMPLE_PROMPT } from './tutorial.js';
+import { coach, LOBBY_STEPS, GAME_STEPS, TOUR_STEPS, EXAMPLE_PROMPT } from './tutorial.js';
 
 startBackground($('#bg'));
 applyTheme(document.body, 'lobby');
@@ -97,12 +97,14 @@ socket.on('room:state', (room) => {
       if (session.room !== room.code) return;
       coach.run(GAME_STEPS, {
         actions: { example: () => game.fillPrompt(EXAMPLE_PROMPT) },
-        onDone: () => {
+        onDone: async () => {
           try {
             localStorage.setItem('promptame.tutorialDone', '1');
           } catch {
             /* 저장 실패해도 무시 */
           }
+          await leaveRoom(); // 연습방을 나와 로비에서 나머지 화면을 둘러본다
+          runTour();
         },
       });
     }, 1700);
@@ -129,6 +131,19 @@ socket.on('game:end', (result) => {
   coach.stop();
   finale.show(result, session.playerId);
 });
+
+// 연습이 끝난 뒤: 랭킹, 내 기록, 상점·뽑기 화면을 열어 보여 주고 고득점 팁을 권한다
+const closeModals = () => document.querySelectorAll('.modal').forEach((m) => (m.hidden = true));
+function runTour() {
+  const open = (btn) => () => {
+    closeModals();
+    $(btn).click();
+  };
+  coach.run(TOUR_STEPS, {
+    actions: { ranking: open('#btn-ranking'), profile: open('#btn-profile'), shop: open('#btn-shop'), closeAll: closeModals },
+    onEnd: closeModals,
+  });
+}
 
 // 튜토리얼: 로비 안내 → 혼자 하는 연습 게임
 async function startTutorialGame() {

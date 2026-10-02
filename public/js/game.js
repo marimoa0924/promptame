@@ -4,6 +4,20 @@ import { socket, session, request } from './net.js';
 import { $, refs, charSvg, toast, copyText, formatTime, replay } from './ui.js';
 import { syncBgm, stopBgm } from './bgm.js';
 
+// 이모지 번호는 서버(game/room.js EMOTE_IDS)와 같다
+const EMOTES = {
+  thumbs: { icon: '👍', label: '좋아요' },
+  laugh: { icon: '😆', label: '웃겨요' },
+  cool: { icon: '😎', label: '멋져요' },
+  cry: { icon: '😭', label: '엉엉' },
+  think: { icon: '🤔', label: '고민 중' },
+  fire: { icon: '🔥', label: '불타오른다' },
+  clap: { icon: '👏', label: '박수' },
+  shock: { icon: '😱', label: '깜짝' },
+};
+const EMOTE_COOLDOWN_MS = 800; // 서버(emoteCooldownMs)와 같은 값. 표시용이고 실제 검사는 서버가 한다.
+
+
 
 import { playSfx } from './sfx.js';
 import { applyTheme, sceneSvg, sparkle, SCENE_W, SCENE_TOP, SCENE_BOTTOM, SCENE_FLOOR } from './maps.js';
@@ -411,9 +425,78 @@ export class Game {
     b.timers.bubble = setTimeout(() => el.classList.remove('show'), 3200);
   }
 
-  // 캐릭터를 누르면 폴짝 뛴다. 채팅과 이모지는 화면을 비좁게 해서 뺐다.
+  // 캐릭터를 누르면 폴짝 뛴다. 글로 말하는 채팅은 없고, 정해진 이모지 8개만 보낼 수 있다.
   bindChat() {
     for (const b of Object.values(this.boards)) b.r.avatar.addEventListener('click', () => replay(b.r.avatar, 'hop'));
+    this.buildEmotePicker();
+    socket.on('emote', (d) => this.onEmote(d));
+  }
+
+  // 내 무대 오른쪽 아래의 😊 버튼을 누르면 이모지 판이 떠오른다. 입력창 자리를 차지하지 않는 떠 있는 UI다.
+  buildEmotePicker() {
+    const { frame } = this.boards.me.r;
+    const board = this.boards.me.el;
+    const wrap = document.createElement('div');
+    wrap.className = 'emote-picker';
+    const fab = Object.assign(document.createElement('button'), { type: 'button', className: 'emote-fab', textContent: '😊', title: '이모지 보내기' });
+    fab.setAttribute('aria-expanded', 'false');
+    const pop = document.createElement('div');
+    pop.className = 'emote-pop';
+    pop.hidden = true;
+    const setOpen = (open) => {
+      pop.hidden = !open;
+      fab.setAttribute('aria-expanded', String(open));
+    };
+    for (const [id, e] of Object.entries(EMOTES)) {
+      const btn = Object.assign(document.createElement('button'), { type: 'button', className: 'emote-btn', textContent: e.icon, title: e.label });
+      btn.addEventListener('click', async () => {
+        if (this.emoteCooling) return;
+        this.emoteCooling = true;
+        pop.classList.add('cooling');
+        setTimeout(() => {
+          this.emoteCooling = false;
+          pop.classList.remove('cooling');
+        }, EMOTE_COOLDOWN_MS);
+        setOpen(false);
+        const res = await request('emote:send', { emoteId: id });
+        if (!res.ok) toast(res.error, 'error', 1500);
+      });
+      pop.append(btn);
+    }
+    fab.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setOpen(pop.hidden);
+    });
+    document.addEventListener('click', (e) => {
+      if (!wrap.contains(e.target)) setOpen(false); // 바깥을 누르면 닫힌다
+    });
+    wrap.append(pop, fab);
+    // 무대는 넘치는 걸 잘라 내서(overflow: hidden) 판이 무대 안에 있으면 잘린다. 보드에 붙이고 무대 오른쪽 아래에 맞춰 둔다.
+    board.append(wrap);
+    const place = () => {
+      const b = board.getBoundingClientRect();
+      const f = frame.getBoundingClientRect();
+      wrap.style.bottom = `${Math.max(0, b.bottom - f.bottom) + 10}px`;
+      wrap.style.right = `${Math.max(0, b.right - f.right) + 10}px`;
+    };
+    new ResizeObserver(place).observe(frame);
+    new ResizeObserver(place).observe(board);
+    place();
+  }
+
+  // 누군가 이모지를 보냈다: 그 캐릭터가 폴짝 뛰고 머리 위로 이모지가 떠오르며, HUD 말풍선에도 뜬다
+  onEmote({ from, emoteId }) {
+    const e = EMOTES[emoteId];
+    const b = this.boardOf(from);
+    if (!e || !b) return;
+    replay(b.r.avatar, 'hop');
+    const fl = document.createElement('span');
+    fl.className = 'emote-float';
+    fl.textContent = e.icon;
+    fl.style.setProperty('--dx', `${Math.round(Math.random() * 40 - 20)}px`);
+    b.r.avatar.after(fl);
+    setTimeout(() => fl.remove(), 1900);
+    this.say(b, e.icon);
   }
 
   // ---------- 입력 ----------
