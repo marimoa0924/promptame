@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { checkPrompt, checkAnswer, drawSequence, locateMatches, locateOverflow } from '../promptRules.js';
+import { checkPrompt, checkAnswer, drawSequence, locateMatches, locateOverflow, requiredWords } from '../promptRules.js';
 import { createMockAI, generateWithRetry } from './gemini.js';
 import { botPrompt, BOT_NAMES } from './bot.js';
 
@@ -365,7 +365,7 @@ export class Room {
     const durationMs = Math.min(JUDGE_MAX_MS, this.t.judgeBaseMs + lines * this.t.judgePerLineMs);
     p.live.phase = 'judge';
     // 평가 연출용: 필수어 위치와 분량을 넘기 시작한 위치(원문 글자 위치). 판정은 아래 verdict가 전부다.
-    const marks = locateMatches(answer, problem.keywords).map(({ start, end }) => ({ start, end }));
+    const marks = locateMatches(answer, requiredWords(problem)).map(({ start, end }) => ({ start, end }));
     const over = verdict.lengthOk || verdict.truncated ? null : locateOverflow(answer, lengthRule);
     this.emit('ai:judge', { playerId: p.id, durationMs, len: answer.length, marks, over });
     await sleep(durationMs);
@@ -585,8 +585,8 @@ export class Room {
             ? {
                 topic: problem.topic,
                 length: lengthRule.name,
-                keyword: problem.keywords.join(' · '),
-                keywords: problem.keywords,
+                keyword: requiredWords(problem).join(' · '),
+                keywords: requiredWords(problem),
                 banned: [problem.topic, ...problem.keywords],
                 problem, // 클라이언트도 같은 규칙 파일로 금지어를 미리 검사한다
               }

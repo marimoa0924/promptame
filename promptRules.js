@@ -279,8 +279,11 @@ export const DEFAULT_DIFFICULTY_RULES = {
   쉬움: { minKeywords: 1 },
   보통: { minKeywords: 1 },
   어려움: { minKeywords: 2 },
-  '매우 어려움': { minKeywords: 3 },
+  '매우 어려움': { minKeywords: 4 }, // 주제어까지 4개 모두
 };
+
+// AI 답변에 담겨야 하는 낱말 후보예요. 주제어도 필수어로 쳐요(주제어 1개 + 필수어 3개).
+export const requiredWords = (problem) => [problem.topic, ...problem.keywords];
 
 // lengthRule은 { type: 'chars' | 'sentences', value: 숫자 } 형태예요.
 // opts.truncated가 true면 AI 답변이 토큰 한도로 잘린 거라서 분량 초과로 보고 실패 처리해요.
@@ -290,11 +293,9 @@ export function checkAnswer(answer, problem, lengthRule, difficultyRules = DEFAU
   const body = normalizeLoose(text);
   const truncated = opts.truncated === true;
 
-  const matched = problem.keywords.filter((k) => body.includes(normalizeLoose(k)));
-  const needed = Math.min(
-    difficultyRules[problem.difficulty]?.minKeywords ?? problem.keywords.length,
-    problem.keywords.length,
-  );
+  const pool = requiredWords(problem);
+  const matched = pool.filter((k) => body.includes(normalizeLoose(k)));
+  const needed = Math.min(difficultyRules[problem.difficulty]?.minKeywords ?? pool.length, pool.length);
   const keywordOk = matched.length >= needed;
 
   const actual = lengthRule.type === 'sentences' ? countSentences(text) : countChars(text);
@@ -324,12 +325,24 @@ export function checkAnswer(answer, problem, lengthRule, difficultyRules = DEFAU
 
 // data는 problems.json 내용이에요. usedIds에 이미 낸 번호를 넣으면 겹치지 않게 뽑아요.
 // 서버가 한 번 뽑아서 두 플레이어에게 똑같이 보내 주세요.
+// 난이도마다 나올 수 있는 분량이 달라요. 쉬움은 넉넉하게, 매우 어려움은 빠듯하게(짧은 답에 필수어를 다 담아야 해요).
+// 여기에 없는 난이도는 분량 8개를 모두 써요. 이름은 problems.json의 lengthRules 이름과 같아요.
+export const LENGTH_POOLS = {
+  쉬움: ['2문장 이내', '3문장 이내', '100자 이내', '150자 이내', '200자 이내', '300자 이내'],
+  보통: ['1문장 이내', '2문장 이내', '3문장 이내', '50자 이내', '100자 이내', '150자 이내', '200자 이내', '300자 이내'],
+  어려움: ['1문장 이내', '2문장 이내', '3문장 이내', '50자 이내', '100자 이내', '150자 이내'],
+  '매우 어려움': ['1문장 이내', '2문장 이내', '50자 이내', '100자 이내'],
+};
+
 export function drawQuestion(data, difficulty, usedIds = [], rng = Math.random) {
   const pool = data.problems.filter((p) => p.difficulty === difficulty);
   const fresh = pool.filter((p) => !usedIds.includes(p.id));
   const source = fresh.length > 0 ? fresh : pool;
   const problem = source[Math.floor(rng() * source.length)];
-  const lengthRule = data.lengthRules[Math.floor(rng() * data.lengthRules.length)];
+  const names = LENGTH_POOLS[difficulty];
+  const rules = (names && data.lengthRules.filter((r) => names.includes(r.name))) || [];
+  const lengths = rules.length ? rules : data.lengthRules;
+  const lengthRule = lengths[Math.floor(rng() * lengths.length)];
   return { problem, lengthRule };
 }
 

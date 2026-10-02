@@ -1,3 +1,4 @@
+import { requiredWords } from '../promptRules.js';
 // AI 답변 생성기. 유저 프롬프트를 시스템 프롬프트 없이 그대로 보내고, 답변 전체를 받아 돌려준다.
 // 실제 Gemini 호출(createGemini)과 키 없이 돌리는 목(createMockAI)이 같은 모양이다.
 //
@@ -135,8 +136,8 @@ export function createMockAI({ minMs = 300, maxMs = 900 } = {}) {
       const started = Date.now();
       await sleep(minMs + Math.random() * (maxMs - minMs));
       const len = [...String(prompt)].length;
-      const keywords = problem?.keywords ?? [];
-      const n = len < 12 ? 0 : len < 25 ? 1 : len < 45 ? 2 : 3;
+      const keywords = problem ? requiredWords(problem) : [];
+      const n = len < 12 ? 0 : len < 25 ? 1 : len < 45 ? 2 : len < 70 ? 3 : 4;
       const wantsShort = SHORT_CUES.some((c) => prompt.includes(c));
 
       let lines;

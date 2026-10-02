@@ -698,7 +698,10 @@
         "theory of relativity",
         "spacetime",
         "gravity",
-        "speed of light"
+        "speed of light",
+        "아인슈타인",
+        "상대론",
+        "빛의속도"
       ]
     },
     {
@@ -715,7 +718,9 @@
         "quantum mechanics",
         "wave function",
         "superposition",
-        "uncertainty"
+        "uncertainty",
+        "입자",
+        "불확실"
       ]
     },
     {
@@ -732,7 +737,9 @@
         "genetics",
         "allele",
         "genotype",
-        "phenotype"
+        "phenotype",
+        "멘델",
+        "우성열성"
       ]
     },
     {
@@ -749,7 +756,9 @@
         "immune response",
         "antibody",
         "antigen",
-        "immune cell"
+        "immune cell",
+        "백신",
+        "림프구"
       ]
     },
     {
@@ -766,7 +775,8 @@
         "neuroplasticity",
         "synapse",
         "learning",
-        "neural circuit"
+        "neural circuit",
+        "뉴런"
       ]
     },
     {
@@ -783,7 +793,10 @@
         "plate tectonics",
         "subduction",
         "mantle",
-        "plate boundary"
+        "plate boundary",
+        "지각",
+        "대륙",
+        "지진"
       ]
     },
     {
@@ -800,7 +813,9 @@
         "behavioral economics",
         "loss aversion",
         "heuristic",
-        "bias"
+        "bias",
+        "비합리",
+        "카너먼"
       ]
     },
     {
@@ -817,7 +832,9 @@
         "social contract theory",
         "state of nature",
         "sovereignty",
-        "contract"
+        "contract",
+        "홉스",
+        "루소"
       ]
     },
     {
@@ -834,7 +851,9 @@
         "opportunity cost",
         "marginal utility",
         "choice",
-        "alternative"
+        "alternative",
+        "경제",
+        "희소성"
       ]
     },
     {
@@ -851,7 +870,10 @@
         "globalization",
         "value chain",
         "trade",
-        "multinational corporation"
+        "multinational corporation",
+        "국제",
+        "글로벌",
+        "국경"
       ]
     },
     {
@@ -868,7 +890,9 @@
         "Renaissance",
         "humanism",
         "perspective",
-        "classicism"
+        "classicism",
+        "문예부흥",
+        "레오나르도"
       ]
     },
     {
@@ -885,7 +909,8 @@
         "industrial heritage",
         "cultural regeneration",
         "preservation",
-        "reuse"
+        "reuse",
+        "폐공장"
       ]
     },
     {
@@ -902,7 +927,8 @@
         "object-oriented programming",
         "polymorphism",
         "inheritance",
-        "encapsulation"
+        "encapsulation",
+        "클래스"
       ]
     },
     {
@@ -919,7 +945,10 @@
         "machine learning",
         "overfitting",
         "training data",
-        "validation"
+        "validation",
+        "기계학습",
+        "인공지능",
+        "훈련"
       ]
     },
     {
@@ -936,7 +965,9 @@
         "database",
         "normalization",
         "table",
-        "primary key"
+        "primary key",
+        "DB",
+        "관계형"
       ]
     },
     {
@@ -953,7 +984,9 @@
         "Impressionism",
         "color division",
         "Monet",
-        "plein air painting"
+        "plein air painting",
+        "인상파",
+        "빛의화가"
       ]
     },
     {
@@ -970,7 +1003,9 @@
         "harmony",
         "modulation",
         "chord",
-        "interval"
+        "interval",
+        "음악이론",
+        "코드진행"
       ]
     },
     {
@@ -987,7 +1022,9 @@
         "fermented food",
         "lactic acid bacteria",
         "microorganism",
-        "acidity"
+        "acidity",
+        "김치",
+        "효모"
       ]
     },
     {
@@ -1004,7 +1041,8 @@
         "molecular gastronomy",
         "spherification",
         "alginate",
-        "texture"
+        "texture",
+        "분자미식"
       ]
     },
     {
@@ -1021,7 +1059,8 @@
         "ethology",
         "imprinting",
         "instinct",
-        "social behavior"
+        "social behavior",
+        "로렌츠"
       ]
     },
     {
@@ -5461,7 +5500,8 @@
         "thermodynamics",
         "entropy",
         "heat engine",
-        "energy conservation"
+        "energy conservation",
+        "무질서"
       ]
     },
     {
@@ -5478,7 +5518,8 @@
         "electromagnetic induction",
         "faraday",
         "flux change",
-        "induced current"
+        "induced current",
+        "자기장"
       ]
     },
     {
@@ -5495,7 +5536,8 @@
         "doppler effect",
         "wavelength shift",
         "redshift",
-        "ambulance sound"
+        "ambulance sound",
+        "소리높낮이"
       ]
     },
     {
@@ -5512,7 +5554,9 @@
         "black hole",
         "event horizon",
         "singularity",
-        "schwarzschild"
+        "schwarzschild",
+        "중력붕괴",
+        "빛도탈출"
       ]
     },
     {
@@ -5529,7 +5573,9 @@
         "big bang theory",
         "cosmic expansion",
         "background radiation",
-        "early universe"
+        "early universe",
+        "대폭발",
+        "우주탄생"
       ]
     },
     {
@@ -5546,7 +5592,9 @@
         "nuclear fusion",
         "plasma",
         "deuterium",
-        "tokamak"
+        "tokamak",
+        "태양",
+        "핵반응"
       ]
     },
     {
@@ -5563,7 +5611,8 @@
         "semiconductor",
         "silicon",
         "doping",
-        "transistor"
+        "transistor",
+        "전도성"
       ]
     },
     {
@@ -5580,7 +5629,9 @@
         "superconductor",
         "critical temperature",
         "zero resistance",
-        "meissner"
+        "meissner",
+        "전기저항",
+        "극저온"
       ]
     },
     {
@@ -5597,7 +5648,8 @@
         "chemical equilibrium",
         "le chatelier",
         "reverse reaction",
-        "equilibrium constant"
+        "equilibrium constant",
+        "화학반응"
       ]
     },
     {
@@ -5648,7 +5700,9 @@
         "organic chemistry",
         "hydrocarbon",
         "functional group",
-        "isomer"
+        "isomer",
+        "탄소화합물",
+        "탄소"
       ]
     },
     {
@@ -5665,7 +5719,9 @@
         "enthalpy",
         "heat of reaction",
         "exothermic",
-        "endothermic"
+        "endothermic",
+        "열량",
+        "열출입"
       ]
     },
     {
@@ -5682,7 +5738,9 @@
         "dna replication",
         "double helix",
         "polymerase",
-        "semiconservative"
+        "semiconservative",
+        "유전물질",
+        "디엔에이"
       ]
     },
     {
@@ -5699,7 +5757,8 @@
         "protein synthesis",
         "transcription",
         "translation",
-        "ribosome"
+        "ribosome",
+        "유전정보"
       ]
     },
     {
@@ -5716,7 +5775,9 @@
         "gene editing",
         "crispr",
         "scissors enzyme",
-        "base sequence"
+        "base sequence",
+        "유전자가위",
+        "게놈"
       ]
     },
     {
@@ -5733,7 +5794,9 @@
         "evolution",
         "natural selection",
         "adaptation",
-        "speciation"
+        "speciation",
+        "다윈",
+        "자연도태"
       ]
     },
     {
@@ -5750,7 +5813,8 @@
         "hormone",
         "endocrine",
         "insulin",
-        "homeostasis"
+        "homeostasis",
+        "혈당"
       ]
     },
     {
@@ -5784,7 +5848,8 @@
         "vaccine",
         "antigen injection",
         "herd immunity",
-        "inoculation"
+        "inoculation",
+        "항체"
       ]
     },
     {
@@ -5801,7 +5866,9 @@
         "biodiversity",
         "species richness",
         "conservation",
-        "ecosystem services"
+        "ecosystem services",
+        "종다양성",
+        "생물종"
       ]
     },
     {
@@ -5818,7 +5885,9 @@
         "climate change",
         "carbon neutrality",
         "sea level rise",
-        "abnormal weather"
+        "abnormal weather",
+        "온난화",
+        "지구온도"
       ]
     },
     {
@@ -5852,7 +5921,8 @@
         "ice age",
         "interglacial",
         "milankovitch",
-        "sea level fall"
+        "sea level fall",
+        "얼음"
       ]
     },
     {
@@ -5886,7 +5956,9 @@
         "gravitational waves",
         "spacetime ripples",
         "ligo",
-        "merger observation"
+        "merger observation",
+        "파동",
+        "아인슈타인"
       ]
     },
     {
@@ -5903,7 +5975,9 @@
         "nanotechnology",
         "atomic scale",
         "carbon nanotube",
-        "new material"
+        "new material",
+        "초미세",
+        "미세구조"
       ]
     },
     {
@@ -5920,7 +5994,9 @@
         "differentiation",
         "instantaneous rate of change",
         "tangent",
-        "derivative"
+        "derivative",
+        "미적분",
+        "기울기"
       ]
     },
     {
@@ -5937,7 +6013,9 @@
         "integration",
         "area",
         "antiderivative",
-        "riemann sum"
+        "riemann sum",
+        "면적",
+        "곡선아래"
       ]
     },
     {
@@ -5954,7 +6032,8 @@
         "probability distribution",
         "normal curve",
         "standard deviation",
-        "expected value"
+        "expected value",
+        "종모양"
       ]
     },
     {
@@ -5971,7 +6050,9 @@
         "matrix",
         "eigenvalue",
         "gaussian elimination",
-        "linear transformation"
+        "linear transformation",
+        "벡터",
+        "선형대수"
       ]
     },
     {
@@ -5988,7 +6069,8 @@
         "prime number",
         "divisor",
         "eratosthenes",
-        "cryptography theory"
+        "cryptography theory",
+        "나누어떨어지지"
       ]
     },
     {
@@ -6005,7 +6087,8 @@
         "game theory",
         "nash equilibrium",
         "prisoners dilemma",
-        "strategy"
+        "strategy",
+        "협력과배신"
       ]
     },
     {
@@ -6022,7 +6105,9 @@
         "inflation",
         "money supply",
         "purchasing power decline",
-        "base rate"
+        "base rate",
+        "물가",
+        "화폐"
       ]
     },
     {
@@ -6039,7 +6124,8 @@
         "gross domestic product",
         "value added",
         "growth rate",
-        "national accounts"
+        "national accounts",
+        "지디피"
       ]
     },
     {
@@ -6056,7 +6142,8 @@
         "monetary policy",
         "central bank",
         "rate adjustment",
-        "quantitative easing"
+        "quantitative easing",
+        "한국은행"
       ]
     },
     {
@@ -6073,7 +6160,8 @@
         "public goods",
         "non-excludability",
         "free riding",
-        "externality"
+        "externality",
+        "시장실패"
       ]
     },
     {
@@ -6090,7 +6178,10 @@
         "monopoly",
         "entry barrier",
         "pricing power",
-        "fair trade"
+        "fair trade",
+        "독과점",
+        "시장지배",
+        "기업"
       ]
     },
     {
@@ -6107,7 +6198,8 @@
         "capitalism",
         "private property",
         "profit seeking",
-        "free competition"
+        "free competition",
+        "시장경제"
       ]
     },
     {
@@ -6124,7 +6216,8 @@
         "utilitarianism",
         "greatest number",
         "hedonic calculus",
-        "bentham"
+        "bentham",
+        "행복"
       ]
     },
     {
@@ -6141,7 +6234,8 @@
         "theory of justice",
         "veil of ignorance",
         "rawls",
-        "fairness"
+        "fairness",
+        "롤즈"
       ]
     },
     {
@@ -6175,7 +6269,8 @@
         "structuralism",
         "sign system",
         "levi-strauss",
-        "deep structure"
+        "deep structure",
+        "언어구조"
       ]
     },
     {
@@ -6192,7 +6287,8 @@
         "european union",
         "single market",
         "euro",
-        "brexit"
+        "brexit",
+        "통화통합"
       ]
     },
     {
@@ -6209,7 +6305,9 @@
         "cold war",
         "iron curtain",
         "arms race",
-        "bipolar order"
+        "bipolar order",
+        "소련",
+        "미국"
       ]
     },
     {
@@ -6226,7 +6324,8 @@
         "imperialism",
         "colony",
         "raw material source",
-        "great powers"
+        "great powers",
+        "침략"
       ]
     },
     {
@@ -6243,7 +6342,9 @@
         "industrialization",
         "urban concentration",
         "factory system",
-        "labor movement"
+        "labor movement",
+        "산업혁명",
+        "도시화"
       ]
     },
     {
@@ -6260,7 +6361,8 @@
         "reformation",
         "luther",
         "indulgences",
-        "protestantism"
+        "protestantism",
+        "가톨릭"
       ]
     },
     {
@@ -6277,7 +6379,8 @@
         "enlightenment",
         "reason",
         "social contract",
-        "encyclopedia"
+        "encyclopedia",
+        "볼테르"
       ]
     },
     {
@@ -6311,7 +6414,8 @@
         "silk road",
         "caravan trade",
         "trade route",
-        "oasis city"
+        "oasis city",
+        "비단길"
       ]
     },
     {
@@ -6379,7 +6483,8 @@
         "deep learning",
         "neural network",
         "backpropagation",
-        "hidden layer"
+        "hidden layer",
+        "인공지능"
       ]
     },
     {
@@ -6396,7 +6501,8 @@
         "blockchain",
         "distributed ledger",
         "hash",
-        "mining"
+        "mining",
+        "비트코인"
       ]
     },
     {
@@ -6413,7 +6519,9 @@
         "compiler",
         "parsing",
         "machine code",
-        "optimization"
+        "optimization",
+        "번역",
+        "프로그래밍언어"
       ]
     },
     {
@@ -6430,7 +6538,9 @@
         "operating system",
         "process",
         "memory management",
-        "scheduling"
+        "scheduling",
+        "윈도우",
+        "커널"
       ]
     },
     {
@@ -6447,7 +6557,9 @@
         "network",
         "router",
         "packet",
-        "bandwidth"
+        "bandwidth",
+        "인터넷",
+        "통신망"
       ]
     },
     {
@@ -6464,7 +6576,9 @@
         "natural language processing",
         "morpheme",
         "embedding",
-        "tokenization"
+        "tokenization",
+        "언어처리",
+        "말뭉치"
       ]
     },
     {
@@ -6481,7 +6595,9 @@
         "computer vision",
         "image recognition",
         "convolution",
-        "object detection"
+        "object detection",
+        "영상인식",
+        "사진"
       ]
     },
     {
@@ -6515,7 +6631,9 @@
         "cybersecurity",
         "zero day",
         "penetration test",
-        "ransomware"
+        "ransomware",
+        "해킹",
+        "악성코드"
       ]
     },
     {
@@ -6532,7 +6650,9 @@
         "postmodernism",
         "deconstruction",
         "decentering",
-        "parody"
+        "parody",
+        "모던",
+        "탈근대"
       ]
     },
     {
@@ -6549,7 +6669,8 @@
         "romanticism",
         "emotion",
         "nature worship",
-        "individualism"
+        "individualism",
+        "감정"
       ]
     },
     {
@@ -6566,7 +6687,9 @@
         "baroque",
         "chiaroscuro",
         "ornate decoration",
-        "caravaggio"
+        "caravaggio",
+        "극적",
+        "17세기"
       ]
     },
     {
@@ -6583,7 +6706,9 @@
         "cubism",
         "picasso",
         "multiple viewpoints",
-        "fragmentation"
+        "fragmentation",
+        "입체파",
+        "큐비즘"
       ]
     },
     {
@@ -6600,7 +6725,8 @@
         "abstract expressionism",
         "pollock",
         "action painting",
-        "color field"
+        "color field",
+        "미국화가"
       ]
     },
     {
@@ -6617,7 +6743,8 @@
         "pop art",
         "warhol",
         "popular culture",
-        "silkscreen"
+        "silkscreen",
+        "대중예술"
       ]
     },
     {
@@ -6634,7 +6761,9 @@
         "gothic architecture",
         "spire",
         "stained glass",
-        "flying buttress"
+        "flying buttress",
+        "성당",
+        "중세건축"
       ]
     },
     {
@@ -6651,7 +6780,8 @@
         "bauhaus",
         "functionalism",
         "gropius",
-        "industrial design"
+        "industrial design",
+        "독일디자인"
       ]
     },
     {
@@ -6668,7 +6798,10 @@
         "symphony",
         "movement",
         "sonata form",
-        "beethoven"
+        "beethoven",
+        "심포니",
+        "교향악",
+        "오케스트라"
       ]
     },
     {
@@ -6685,7 +6818,8 @@
         "jazz",
         "improvisation",
         "swing",
-        "blue note"
+        "blue note",
+        "흑인음악"
       ]
     },
     {
@@ -6702,7 +6836,9 @@
         "opera",
         "aria",
         "overture",
-        "recitative"
+        "recitative",
+        "성악",
+        "극장"
       ]
     },
     {
@@ -6719,7 +6855,8 @@
         "fantasy literature",
         "worldview",
         "magic system",
-        "tolkien"
+        "tolkien",
+        "환상소설"
       ]
     },
     {
@@ -6736,7 +6873,8 @@
         "film theory",
         "montage",
         "mise-en-scene",
-        "long take"
+        "long take",
+        "촬영기법"
       ]
     },
     {
@@ -6753,7 +6891,9 @@
         "linguistics",
         "phonology",
         "syntax",
-        "semantics"
+        "semantics",
+        "말소리",
+        "문법"
       ]
     },
     {
@@ -6770,7 +6910,9 @@
         "aged meat",
         "dry aging",
         "enzymatic breakdown",
-        "flavor"
+        "flavor",
+        "고기",
+        "건조"
       ]
     },
     {
@@ -6787,7 +6929,9 @@
         "maillard reaction",
         "browning",
         "amino acid",
-        "reducing sugar"
+        "reducing sugar",
+        "갈색",
+        "굽기"
       ]
     },
     {
@@ -6804,7 +6948,8 @@
         "low-temperature cooking",
         "sous vide",
         "vacuum packing",
-        "constant temperature"
+        "constant temperature",
+        "조리법"
       ]
     }
   ],
@@ -6861,7 +7006,7 @@
       "minKeywords": 2
     },
     "매우 어려움": {
-      "minKeywords": 3
+      "minKeywords": 4
     }
   }
 }

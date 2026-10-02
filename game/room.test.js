@@ -1,6 +1,7 @@
 // 방 규칙 검증: 소켓 없이 가짜 io와 가짜 AI로 판 진행을 돌려 본다. 실행: node --test
 import test, { afterEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { requiredWords } from '../promptRules.js';
 import { Room } from './room.js';
 import { createJsonStore } from './jsonStore.js';
 import { createSeen } from './seen.js';
@@ -23,8 +24,8 @@ function fakeAI({ delay = 0, status = 'OK' } = {}) {
       await sleep(delay);
       if (status !== 'OK') return { status, text: '', truncated: false, finishReason: 'X', latencyMs: 0, usage: null };
       let text = '관련 없는 답이에요';
-      if (prompt.includes('XQZ1')) text = problem.keywords.join(' ');
-      if (prompt.includes('XQZ2')) text = `${problem.keywords.join(' ')}. 하나. 둘. 셋. 넷. 다섯.`.repeat(30);
+      if (prompt.includes('XQZ1')) text = requiredWords(problem).join(' ');
+      if (prompt.includes('XQZ2')) text = `${requiredWords(problem).join(' ')}. 하나. 둘. 셋. 넷. 다섯.`.repeat(30);
       return { status: 'OK', text, truncated: false, finishReason: 'STOP', latencyMs: delay, usage: null };
     },
   };
@@ -492,7 +493,7 @@ test('솔로 판을 중간에 나가면 기록하지 않는다', async () => {
 
 test('방 설정의 AI 제공자를 쓰고, 없으면 기본 AI로 돌아간다', async () => {
   const calls = [];
-  const tag = (name) => ({ kind: name, generate: async (prompt, { problem }) => (calls.push(name), { status: 'OK', text: problem.keywords.join(' '), truncated: false, finishReason: 'STOP', latencyMs: 0, usage: null }) });
+  const tag = (name) => ({ kind: name, generate: async (prompt, { problem }) => (calls.push(name), { status: 'OK', text: requiredWords(problem).join(' '), truncated: false, finishReason: 'STOP', latencyMs: 0, usage: null }) });
   const hooks = { providers: { openai: tag('openai'), anthropic: tag('anthropic') } };
   const c = setup({ ai: tag('default'), hooks, settings: { ai: 'anthropic' } });
   await playing(c);

@@ -55,8 +55,8 @@ const problems = readSheet('주제').map((r) => {
   if (!difficultyRules[difficulty]) warn(`${label}: 난이도 ${difficulty}가 난이도 시트에 없어요.`);
   if (topic.length < 2) notes.push(`${label}: 한 글자 주제는 금지어 검사가 너무 넓게 걸릴 수 있어요.`);
   if (keywords.length === 0) warn(`${label}: 필수어가 비어 있어요.`);
-  if (difficultyRules[difficulty] && keywords.length < difficultyRules[difficulty].minKeywords) {
-    warn(`${label}: 필수어가 ${keywords.length}개인데 난이도가 요구하는 개수보다 적어요.`);
+  if (difficultyRules[difficulty] && keywords.length + 1 < difficultyRules[difficulty].minKeywords) {
+    warn(`${label}: 주제어 포함 ${keywords.length + 1}개인데 난이도가 요구하는 개수보다 적어요.`);
   }
   for (const k of keywords) {
     if (k.length < 2 || k.length > 8) warn(`${label}: 필수어 ${k}는 2~8글자여야 해요.`);

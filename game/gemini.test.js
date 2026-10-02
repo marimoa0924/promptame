@@ -73,12 +73,13 @@ test('실패하면 최대 2번 더 시도한다', async () => {
 
 test('목은 프롬프트가 길수록 필수어를 더 담는다', async () => {
   const mock = createMockAI({ minMs: 0, maxMs: 0 });
-  const problem = { keywords: ['가', '나', '다'] };
-  const count = async (p) => ((await mock.generate(p, { problem })).text.match(/'[가나다]'/g) ?? []).length;
+  const problem = { topic: '가', keywords: ['나', '다', '라'] };
+  const count = async (p) => ((await mock.generate(p, { problem })).text.match(/'[가나다라]'/g) ?? []).length;
   assert.equal(await count('짧게'), 0);
   assert.equal(await count('아이들에게 쉽게 짧게 알려 줘'), 1);
   assert.equal(await count('아이들에게 쉽고 짧게 차근차근 알려 주세요 부탁해요'), 2);
   assert.equal(await count('나는 아이들을 가르치는 교사야. 아이들 눈높이에 맞게 짧고 간결하게 차근차근 설명해줘'), 3);
+  assert.equal(await count('나는 아이들을 가르치는 교사야. 아이들 눈높이에 맞게 짧고 간결하게 차근차근 설명해줘 그리고 예시도 들어줘 부탁해 정말 고마워요 잘 부탁드립니다'), 4);
 });
 
 test('모델 이름 앞의 models/ 는 떼고, 목록에서는 generateContent 가능한 것만 고른다', async () => {

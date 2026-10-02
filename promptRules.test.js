@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {
-  checkPrompt, findLengthSpec, locateMatches, locateOverflow, sentencePieces, checkAnswer, countSentences, countChars, composeJamo, drawQuestion, drawSequence,
+  checkPrompt, findLengthSpec, LENGTH_POOLS, requiredWords, locateMatches, locateOverflow, sentencePieces, checkAnswer, countSentences, countChars, composeJamo, drawQuestion, drawSequence,
 } from './promptRules.js';
 
 const data = JSON.parse(fs.readFileSync(new URL('./problems.json', import.meta.url), 'utf8'));
@@ -80,9 +80,13 @@ test('필수어 개수는 난이도에 따라 달라져요', () => {
   assert.equal(checkAnswer('세포호흡을 해요.', mito, len).pass, false);
   assert.equal(checkAnswer('세포호흡으로 에너지를 만들어요.', mito, len).pass, true);
   assert.equal(checkAnswer('ATP와 세포 호흡', mito, len).pass, true); // 대소문자, 띄어쓰기 무시
-  // 매우 어려움: 3개 모두
+  // 매우 어려움: 주제어와 필수어 3개, 4개 모두
   assert.equal(checkAnswer('정규화와 테이블을 써요.', db, len).pass, false);
-  assert.equal(checkAnswer('정규화와 테이블과 기본키를 써요.', db, len).pass, true);
+  assert.equal(checkAnswer('정규화와 테이블과 기본키를 써요.', db, len).pass, false); // 주제어가 빠졌다
+  assert.equal(checkAnswer('데이터베이스는 정규화와 테이블과 기본키를 써요.', db, len).pass, true);
+  // 주제어도 필수어로 센다
+  assert.deepEqual(requiredWords(db), [db.topic, ...db.keywords]);
+  assert.equal(checkAnswer('피자를 먹어요.', easy, len).pass, true);
 });
 
 test('답변 분량 검사', () => {
@@ -161,10 +165,10 @@ test('숫자 없이 짧게 해 달라는 말과 비슷하게 생긴 다른 말�
   assert.equal(allowed('나는 교사야. 아이들 눈높이에 맞게 짧고 간결하게 설명해줘', mito), true);
 });
 
-test('난이도는 4단계이고 단계마다 문제가 100개, 필수어는 3개다', () => {
+test('난이도는 4단계이고 단계마다 문제가 100개, 필수어는 3개(주제어까지 4개)다', () => {
   const names = ['쉬움', '보통', '어려움', '매우 어려움'];
   assert.deepEqual(Object.keys(data.difficultyRules), names);
-  assert.deepEqual(names.map((n) => data.difficultyRules[n].minKeywords), [1, 1, 2, 3]);
+  assert.deepEqual(names.map((n) => data.difficultyRules[n].minKeywords), [1, 1, 2, 4]);
   for (const n of names) assert.equal(data.problems.filter((p) => p.difficulty === n).length, 100, n);
   assert.ok(data.problems.every((p) => p.keywords.length === 3));
   assert.equal(data.problems.length, 400);
@@ -198,4 +202,11 @@ test('분량을 넘기기 시작한 위치(글자, 문장)', () => {
   for (const x of [t, '1. 첫째\n2. 둘째\n3. 셋째', '끝 기호 없이', '원주율은 3.14예요. 정말요?']) {
     assert.equal(sentencePieces(x).length, countSentences(x), x);
   }
+});
+
+test('난이도마다 나오는 분량이 달라요: 쉬움은 넉넉하고 매우 어려움은 빠듯해요', () => {
+  const seen = (d) => new Set(drawSequence(data, d, 300).map((x) => x.lengthRule.name));
+  assert.deepEqual([...seen('쉬움')].filter((n) => ['1문장 이내', '50자 이내'].includes(n)), []);
+  assert.deepEqual([...seen('매우 어려움')].filter((n) => ['3문장 이내', '150자 이내', '200자 이내', '300자 이내'].includes(n)), []);
+  assert.ok(seen('매우 어려움').size === LENGTH_POOLS['매우 어려움'].length);
 });
