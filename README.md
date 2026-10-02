@@ -74,7 +74,7 @@ public/js/bg.js     디더링 픽셀 배경 캔버스
 | 클라 → 서버 | 서버 → 클라 |
 |---|---|
 | `room:create` `room:join` `room:leave` `room:rematch` `room:addBot` | `room:state` (사람마다 따로 보내는 스냅샷) |
-| `prompt:submit` | `ai:start` `ai:chunk` `ai:judge` `ai:result` `ai:void` |
+| `prompt:submit` `prompt:skip` | `ai:start` `ai:chunk` `ai:judge` `ai:result` `ai:void` |
 | `player:typing` `player:emote` | `player:typing` `player:emote` |
 | | `game:event` (얼음) `game:end` |
 
@@ -82,6 +82,6 @@ public/js/bg.js     디더링 픽셀 배경 캔버스
 
 - [x] 실제 판정 모듈(`promptRules.js`)과 문제 데이터 연결, Gemini 호출 코드
 - [ ] Gemini 실호출 확인 (키·모델명·한도)
-- [ ] 건너뛰기 규칙 확정 후 구현
+- [x] 건너뛰기(개인 건너뛰기) 구현
 - [ ] 임의 매칭 (지금은 안내 토스트만)
 - [ ] 랭크 / 재화 / 가챠

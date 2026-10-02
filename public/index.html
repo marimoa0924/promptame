@@ -29,7 +29,7 @@
         <h2 class="panel-title">내 옷장</h2>
         <label class="field">
           <span>닉네임</span>
-          <input id="nickname" maxlength="12" placeholder="닉네임을 입력하세요" autocomplete="off" />
+          <input id="nickname" maxlength="8" placeholder="닉네임 (2~8자)" autocomplete="off" />
         </label>
         <div class="char-grid" id="char-grid"></div>
         <p class="char-picked" id="char-picked"></p>
@@ -161,6 +161,7 @@
         <div class="prompt-meta">
           <span class="prompt-warn" data-ref="warn"></span>
           <span class="counter" data-ref="counter"></span>
+          <button class="btn btn-ghost" type="button" data-ref="skip" title="점수 없이 다음 문제로 (3초간 입력 정지)">건너뛰기</button>
           <button class="btn btn-primary" type="submit" data-ref="send">보내기</button>
         </div>
       </form>

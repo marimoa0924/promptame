@@ -327,6 +327,19 @@ export class Game {
       }
     });
 
+    r.skip.addEventListener('click', async () => {
+      if (r.skip.disabled) return;
+      r.skip.disabled = true;
+      const res = await request('prompt:skip');
+      if (!res.ok) toast(res.error, 'error');
+      else {
+        r.input.value = '';
+        this.updateCounter();
+        this.checkBanned();
+      }
+      this.updateForm();
+    });
+
     r.form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const text = r.input.value.trim();
@@ -383,6 +396,7 @@ export class Game {
     const playing = this.room?.state === 'playing';
     r.input.disabled = !playing || frozen;
     r.send.disabled = !playing || !me || me.busy || frozen;
+    r.skip.disabled = r.send.disabled || !!this.room?.settings.tutorial;
     r.input.placeholder = !playing
       ? '게임이 시작되면 입력할 수 있어요'
       : frozen
@@ -439,6 +453,10 @@ export class Game {
       if (b) this.popEmote(b, emoji);
     });
     socket.on('game:event', (e) => {
+      if (e.type === 'skip') {
+        if (e.target === session.playerId) toast('⏭ 건너뛰었어요! 3초 뒤에 이어서 해요', 'info', 2500);
+        return;
+      }
       if (e.type !== 'freeze') return;
       if (e.target === session.playerId) toast('❄ 상대가 3연속 원샷 PASS! 5초간 얼음!', 'error', 3000);
       else toast('🔥 3연속 원샷 PASS! 상대를 얼렸어요!', 'ok', 3000);
@@ -533,7 +551,9 @@ export class Game {
     } else if (p && p.frozenUntil > now) {
       const sec = ((p.frozenUntil - now) / 1000).toFixed(1);
       key = `frozen-${sec}`;
-      html = `<div class="ov-icon">❄</div><p>얼음!<br><b>${sec}s</b></p>`;
+      html = p.frozenKind === 'skip'
+        ? `<div class="ov-icon">⏭</div><p>건너뛰는 중<br><b>${sec}s</b></p>`
+        : `<div class="ov-icon">❄</div><p>얼음!<br><b>${sec}s</b></p>`;
     }
     if (key === b.overlayKey) return;
     b.overlayKey = key;

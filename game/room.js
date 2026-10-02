@@ -14,6 +14,7 @@ const JUDGE_MAX_MS = 4500;
 const COUNTDOWN_MS = 3500;
 const RECONNECT_GRACE_MS = 20_000;
 const FREEZE_MS = 5000;
+const SKIP_PAUSE_MS = 3000; // 건너뛰면 내 입력이 잠깐 멈춘다 (분량만 골라 뽑는 것을 막는다)
 const STREAK_FOR_FREEZE = 3;
 // 평가 AI가 답변을 "읽는" 시간. 너무 빨리 채점되면 사용자가 결과를 읽을 틈이 없다.
 const JUDGE_BASE_MS = 900;
@@ -129,6 +130,7 @@ export class Room {
       topicIdx: 0,
       busy: false,
       frozenUntil: 0,
+      frozenKind: null,
       live: null,
     };
   }
@@ -254,6 +256,25 @@ export class Room {
     return { ok: true };
   }
 
+  // 건너뛰기: 점수 없이 내 다음 문제로 넘어간다. 연속 카운트는 0이 되고 내 입력이 3초 멈춘다.
+  skip(playerId) {
+    const p = this.players.get(playerId);
+    if (!p) return { ok: false, error: '플레이어를 찾을 수 없어요' };
+    if (this.settings.tutorial) return { ok: false, error: '튜토리얼에서는 건너뛸 수 없어요' };
+    if (this.state !== 'playing') return { ok: false, error: '아직 게임 중이 아니에요' };
+    if (p.busy) return { ok: false, error: 'AI가 답변 중일 때는 건너뛸 수 없어요' };
+    if (Date.now() < p.frozenUntil) return { ok: false, error: '지금은 입력할 수 없어요' };
+    p.topicIdx += 1;
+    p.attempts = 0;
+    p.streak = 0;
+    p.live = null;
+    p.frozenUntil = Date.now() + SKIP_PAUSE_MS;
+    p.frozenKind = 'skip';
+    this.emit('game:event', { type: 'skip', target: p.id, until: p.frozenUntil });
+    this.broadcast();
+    return { ok: true };
+  }
+
   async runAnswer(p, prompt, item) {
     const round = this.round;
     const alive = () => !this.closed && this.round === round && this.state === 'playing';
@@ -305,6 +326,7 @@ export class Room {
         const opp = this.opponentOf(p.id);
         if (opp) {
           opp.frozenUntil = Date.now() + FREEZE_MS;
+          opp.frozenKind = 'freeze';
           this.emit('game:event', { type: 'freeze', from: p.id, target: opp.id, until: opp.frozenUntil });
         }
       }
@@ -390,7 +412,7 @@ export class Room {
     this.sequence = this.pickSequence();
     this.startedAt = this.endsAt = null;
     for (const p of all) {
-      Object.assign(p, { ready: false, score: 0, streak: 0, attempts: 0, topicIdx: 0, busy: false, frozenUntil: 0, live: null });
+      Object.assign(p, { ready: false, score: 0, streak: 0, attempts: 0, topicIdx: 0, busy: false, frozenUntil: 0, frozenKind: null, live: null });
     }
     if (all.length >= this.capacity) {
       this.startCountdown();
@@ -436,6 +458,7 @@ export class Room {
           connected: p.connected,
           busy: p.busy,
           frozenUntil: p.frozenUntil,
+          frozenKind: p.frozenKind,
           topicIdx: p.topicIdx,
           topic: showTopic
             ? {
