@@ -1,4 +1,4 @@
-# 🏮 PROMPT P.T (promptame)
+# 🏮 PROM P.T (promptame)
 
 AI에게 주제문을 **직접 말하지 않고** 원하는 답을 끌어내는 실시간 1:1 프롬프트 대결 게임. 로우폴리 도트 스타일.
 

@@ -381,7 +381,7 @@ async function selfTest() {
 }
 
 httpServer.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n  🏮 PROMPT P.T 서버 실행 중`);
+  console.log(`\n  🏮 PROM P.T 서버 실행 중`);
   if (!GOOGLE_CLIENT_ID) console.log('  구글 로그인: 꺼짐 (GOOGLE_CLIENT_ID 없음, 게스트 로그인만 가능)');
   else if (googleIdLooksValid) console.log(`  구글 로그인: 켜짐 (${GOOGLE_CLIENT_ID.slice(0, 14)}…)${googleFileNote ? ` ${googleFileNote}` : ''}`);
   else console.log(`  ⚠ 구글 로그인: GOOGLE_CLIENT_ID 모양이 이상해요 (${GOOGLE_CLIENT_ID.slice(0, 20)}…). '숫자-문자.apps.googleusercontent.com' 형태여야 해요. 클라이언트 보안 비밀번호(GOCSPX-…)나 프로젝트 ID를 넣은 건 아닌지 확인하세요`);

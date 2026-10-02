@@ -2,7 +2,7 @@
   "name": "promptame",
   "version": "0.1.0",
   "private": true,
-  "description": "PROMPT P.T - 실시간 1:1 프롬프트 대결 게임",
+  "description": "PROM P.T - 실시간 1:1 프롬프트 대결 게임",
   "type": "module",
   "engines": {
     "node": ">=20"
