@@ -52,3 +52,14 @@ test('분량을 자주 넘으면 길이 팁', () => {
   const r = analyze(mk(10).map((e) => ({ ...e, pass: false, reasons: ['LENGTH_OVER'] })));
   assert.ok(r.tips[0].includes('분량'));
 });
+
+test('유형이 세분화되어 균형형만 나오지 않는다', () => {
+  const E = (text, o = {}) => makeEntry({ text, attempt: 1, pass: true, ...o });
+  const rep = (n, f) => Array.from({ length: n }, f);
+  const name = (list) => analyze(list).type.name;
+  assert.equal(name(rep(10, () => E('이 물건의 모양과 쓰임, 만드는 과정을 풀어서 설명해 주는 글을 써 줘 제발 부탁해'))), '특징 묘사형');
+  assert.equal(name(rep(10, (_, i) => E(i < 4 ? '핵심만 간단하게 알려줘 그리고 친절하게 말해 줘' : '알려줘 그리고 친절하게 말해 줘 부탁해 정말로'))), '간결 요청형');
+  assert.equal(name(rep(10, () => E('이것이 무엇인지 왜 중요한지 어떻게 쓰는지 하나하나 알려 줘 부탁해'))), '질문 던지기형');
+  assert.equal(name(rep(10, () => E('먼저 정의를 말하고 그다음 쓰임을 설명한 뒤 마지막으로 정리해서 알려 줘'))), '단계 안내형');
+  assert.equal(name(rep(10, (_, i) => E('흥미로운 이야기 하나 들려줄래 그리고 마무리도 부탁해', { attempt: 3, pass: i < 6 }))), '끈기 도전형');
+});
